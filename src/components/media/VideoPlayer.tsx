@@ -19,7 +19,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isPlaying) {
       interval = setInterval(() => {
         setProgress((prev) => {

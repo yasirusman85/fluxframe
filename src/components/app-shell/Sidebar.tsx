@@ -7,7 +7,6 @@ import {
   FolderKanban,
   Star,
   Sparkles,
-  Zap,
   ChevronLeft,
   ChevronRight,
   Layers,
@@ -114,26 +113,23 @@ export const Sidebar: React.FC = () => {
         ))}
       </div>
 
-      {/* Usage Meter Footer */}
+      {/* Prototype Status Footer */}
       <div className="p-3 border-t border-zinc-800/60 bg-zinc-900/40">
         {sidebarOpen ? (
-          <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800/80 space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
+          <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800/80 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-semibold text-zinc-300">
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" /> Free Plan
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" /> Prototype Mode
               </span>
-              <span className="text-[11px] text-violet-400 font-bold">14 / 20 Credits</span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/50">Unlimited</span>
             </div>
-            <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-gradient-to-r from-violet-500 to-indigo-500 h-1.5 rounded-full w-[70%]" />
-            </div>
-            <button className="w-full text-xs font-semibold py-1.5 text-center text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700/80 rounded-lg transition-colors flex items-center justify-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-amber-400" /> Upgrade Pro
-            </button>
+            <p className="text-[11px] text-zinc-400 leading-tight">
+              Full client-side features enabled with zero credit limits.
+            </p>
           </div>
         ) : (
-          <div className="flex items-center justify-center p-2 text-violet-400">
-            <Zap className="w-5 h-5" />
+          <div className="flex items-center justify-center p-2 text-violet-400" title="Prototype Mode (Unlimited)">
+            <Sparkles className="w-5 h-5" />
           </div>
         )}
       </div>

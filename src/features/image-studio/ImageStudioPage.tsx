@@ -9,6 +9,7 @@ import {
   Wand2,
   Maximize2,
   Download,
+  Info,
 } from "lucide-react";
 import { IMAGE_MODELS } from "../../lib/demo-assets";
 import { useProjectStore } from "../../store/project-store";
@@ -103,7 +104,15 @@ export const ImageStudioPage: React.FC = () => {
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-violet-400" /> Image Studio Controls
             </h2>
-            <span className="text-xs text-zinc-400 font-mono">Model Engine</span>
+            <span className="text-xs text-zinc-400 font-mono">Prototype Mode</span>
+          </div>
+
+          {/* Provider & Privacy Disclosure */}
+          <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 flex items-start gap-2">
+            <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+            <span>
+              <strong>Provider Notice:</strong> Image generation uses a public Pollinations endpoint with automatic procedural fallback. Prompts are transmitted via URL parameters. Dynamic model allocation (`sana` / `flux`) is handled by the endpoint.
+            </span>
           </div>
 
           {/* Prompt Textarea */}

@@ -1,65 +1,53 @@
 # Higgsfield Clone
 
-Higgsfield Clone is a cinematic AI visual-generation creative studio application built with React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, and Zustand.
+Higgsfield Clone is an AI visual-generation creative studio web application built with React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, and Zustand.
+
+![Higgsfield Clone](public/favicon.svg)
 
 ## Core Experience
 
-1. **Explore Studio**: Hero gallery, quick-start tool cards, community preset prompts with 1-click prefill, and recent creations grid.
-2. **Image Studio Workspace**: Multi-model selection (`Flux Realism v2`, `Studio Cinema XL`, `Cyber Concept Pro`, `HyperDetail Ultra`), AI prompt enhancer, canvas aspect ratio picker, quality presets, seed/negative prompt controls, and live canvas preview.
-3. **Video Studio Workspace**: Starting keyframe photo upload preview, duration picker (5s / 10s), motion strength slider (1-10), and interactive 60fps motion video player with time scrubbing.
-4. **Simulated Generation Engine**: Realistic asynchronous queueing state machine (`queued` → `processing` → `completed`/`failed`), cancelation handling, live stage descriptions, and retry actions.
-5. **Project Library & Detail View**: Grid view with search by title/prompt, filter by media type (All, Image, Video, Favorites), sort by date, Before/After latent step slider, 1-click media downloads, shareable URLs, and settings duplication.
-6. **Command Palette**: Press `Cmd+K` / `Ctrl+K` from anywhere to launch quick search across models, presets, and pages.
+1. **Explore Studio**: Hero gallery, quick-start creative presets, community prompts with 1-click prefill, and project grid.
+2. **Image Studio Workspace**: AI image generation form, prompt enhancer, canvas aspect ratio selector (`16:9`, `1:1`, `9:16`, `4:3`, `21:9`), preset options, and live preview.
+3. **Video Studio Workspace**: Simulated motion preview generator with starting keyframe upload preview, duration selector, motion strength controls, and interactive video player.
+4. **Resilient AI Engine**: Public Pollinations image endpoint integration with `AbortController` true network cancellation, 12s timeout, lightweight URL storage, and automatic procedural SVG fallback.
+5. **Project Library & Detail View**: Grid view with search, media filtering (All, Image, Video, Favorites), date sorting, Before/After latent step comparison slider, 1-click downloads, shareable URLs, and project duplication.
+6. **Command Palette**: Press `Cmd+K` / `Ctrl+K` from anywhere to launch quick search across tools, presets, and pages.
 
-## Product Decisions
+## Product & Prototype Disclosures
 
-> I prioritized a complete, reliable user journey and product-quality state handling over a thin dependency on a paid generation API.
+> **Honest Prototype Architecture**:
 
-- **Persistent Client Store**: Uses Zustand persistent storage so user generations, favorite flags, and active queue state survive browser refreshes.
-- **Cinematic Dark Design Tokens**: Built with CSS custom properties (`--background`, `--panel`, `--accent`, `--border`), subtle glow effects, and responsive drawer navigation.
-- **Accessibility & Keyboard Usability**: Keyboard shortcuts (`Cmd+K`, `Escape`), semantic button elements, visible focus rings, ARIA live region progress announcements, and text contrast.
+- **Image Generation**: Powered by a public Pollinations endpoint. Prompts are transmitted via URL parameters, and model allocation (`sana` / `flux`) is dynamic. If the endpoint is throttled or offline, the app automatically switches to procedural SVG fallback rendering.
+- **Video Generation**: Outputs are **simulated motion previews** rendered via keyframe animation vectors and optical flow controls.
+- **Persistent Local Store**: Uses Zustand persistent storage in `localStorage`. Remote image URLs are preserved directly to avoid Base64 storage bloat.
+- **Unlimited Access**: Operates in prototype mode with zero credit paywalls.
 
-## Architecture & Tech Stack
+## Technical Stack
 
 - **Core**: React 19, TypeScript, Vite
 - **State**: Zustand with `persist` middleware
 - **Styling**: Tailwind CSS v4, Vanilla CSS Custom Tokens
-- **Icons & Animation**: Lucide React, Framer Motion
-- **Testing**: Vitest, React Testing Library, happy-dom
+- **Icons & Motion**: Lucide React, Framer Motion
+- **Testing**: Vitest, React Testing Library, happy-dom (9 unit tests)
+- **Routing**: `BrowserRouter` clean URLs with SPA fallback support
 
-## Deliberate Limitations
-
-- No real AI inference — uses a simulated generation engine for reliable, deterministic demo workflows.
-- No authentication, payments, or cloud storage.
-- No real-time collaboration or training models.
-
-## Accessibility
-
-- Keyboard navigation (`Cmd+K` command palette, `Escape` to close modals)
-- Visible focus indicators
-- Semantic buttons and labels
-- Reduced motion support via `prefers-reduced-motion`
-- Sufficient text contrast on dark backgrounds
-
-## Running Locally
+## Verification & Testing
 
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Start local development server
-npm run dev
-
-# 3. Execute unit test suite
+# 2. Run automated Vitest test suite (9 tests)
 npm run test
 
-# 4. Build production bundle
+# 3. Build production bundle
 npm run build
+
+# 4. Start local development server
+npm run dev
 ```
 
-## Deployment (Cloudflare Pages)
+## Audit & Verification Evidence
 
-Configured for Cloudflare Pages SPA deployment with `public/_redirects`:
-
-- **Build command**: `npm run build`
-- **Output directory**: `dist`
+- Benchmark & execution logs: [.agent-logs/](.agent-logs/)
+- Capture test details: [CAPTURE-TEST.md](CAPTURE-TEST.md)

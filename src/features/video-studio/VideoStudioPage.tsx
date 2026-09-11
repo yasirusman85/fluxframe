@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import {
-  Video as VideoIcon,
-  Upload,
-  Film,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { Video as VideoIcon, Upload, X, Sparkles, Film, Info } from "lucide-react";
 import { VIDEO_MODELS } from "../../lib/demo-assets";
 import { useProjectStore } from "../../store/project-store";
 import { useUIStore } from "../../store/ui-store";
@@ -100,7 +94,15 @@ export const VideoStudioPage: React.FC = () => {
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <VideoIcon className="w-5 h-5 text-rose-400" /> Video Studio Controls
             </h2>
-            <span className="text-xs text-rose-400 font-mono font-bold">Motion Engine V2</span>
+            <span className="text-xs text-rose-400 font-mono font-bold">Simulated Preview Mode</span>
+          </div>
+
+          {/* Prototype Disclosure */}
+          <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 flex items-start gap-2">
+            <Info className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>
+              <strong>Prototype Note:</strong> Video generation outputs are simulated motion previews using keyframe animation vectors and optical flow controls.
+            </span>
           </div>
 
           {/* Prompt */}
