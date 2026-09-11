@@ -132,10 +132,16 @@ export const ProjectDetailPage: React.FC = () => {
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 shadow-2xl space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg text-white">{project.title}</h2>
-              <Badge variant={project.type === "video" ? "rose" : "violet"}>
-                {project.type.toUpperCase()}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={project.type === "video" ? "rose" : "violet"}>
+                  {project.type.toUpperCase()}
+                </Badge>
+                {project.providerSource && (
+                  <Badge variant={project.providerSource === "pollinations-ai" ? "emerald" : "amber"}>
+                    {project.providerSource === "pollinations-ai" ? "Pollinations AI" : "Procedural Fallback"}
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800">

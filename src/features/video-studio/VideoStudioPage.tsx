@@ -73,12 +73,13 @@ export const VideoStudioPage: React.FC = () => {
     const createdProject = useProjectStore.getState().getProject(projectId);
     if (!createdProject) return;
 
-    await simulateGeneration(createdProject, (progress, status, stageMessage, resultUrl) => {
+    await simulateGeneration(createdProject, (progress, status, stageMessage, resultUrl, providerSource) => {
       setCurrentStageMessage(stageMessage || "Synthesizing optical motion...");
       updateProject(projectId, {
         progress,
         status,
         ...(resultUrl ? { outputUrl: resultUrl, thumbnailUrl: resultUrl } : {}),
+        ...(providerSource ? { providerSource } : {}),
       });
 
       if (status === "completed") {

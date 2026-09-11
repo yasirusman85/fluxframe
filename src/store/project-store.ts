@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { GenerationProject, CreateProjectInput } from "../types/project";
 import { INITIAL_PROJECTS, generateVisualDataUrl } from "../lib/demo-assets";
+import { cancelGenerationTask } from "../lib/generation-engine";
 
 export interface ProjectState {
   projects: GenerationProject[];
@@ -129,6 +130,7 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       cancelGeneration: (id: string) => {
+        cancelGenerationTask(id);
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id

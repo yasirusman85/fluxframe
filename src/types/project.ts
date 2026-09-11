@@ -27,6 +27,7 @@ export interface GenerationProject {
   motionStrength?: number;
   initialImageUrl?: string;
   errorMessage?: string;
+  providerSource?: "pollinations-ai" | "procedural-fallback";
 }
 
 export interface CreateProjectInput {

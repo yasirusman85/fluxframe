@@ -57,13 +57,13 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        {/* Free Open-Source AI Model Indicator */}
+        {/* AI Image Generation Status Badge */}
         <div
           className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/50 text-[11px] text-emerald-300 font-medium"
-          title="Powered by Free Open-Source FLUX & SD AI Models (No Tokens Required)"
+          title="AI image generation powered by a public Pollinations endpoint, with procedural fallback"
         >
           <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-          <span>FLUX.1 Open AI</span>
+          <span>AI Image Generation</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
         </div>
 
