@@ -6,10 +6,11 @@
 - **Queue & AI Engine**: Public Pollinations image endpoint with `AbortController` cancellation, 12s timeout, lightweight URL preservation, and procedural SVG fallback.
 - **Routing Engine**: Clean `BrowserRouter` (`/create/image`, `/create/video`, `/projects`) with Cloudflare Pages `_redirects` SPA support.
 
-## Captured Log Files
+## Verbatim Agent Capture Logs
 
-Verbatim system harness transcripts captured automatically during this session:
-- [.agent-logs/session-01.md](.agent-logs/session-01.md) (Step-by-step verbatim prompts, tool calls, and responses with UTC timestamps and model identity)
+Verbatim prompt-and-final-response capture logs:
+- [.agent-logs/session-01.md](.agent-logs/session-01.md) (Verbatim prompts and final responses with model identity and canary tests)
+- [.agent-logs/record_turn.py](.agent-logs/record_turn.py) (Automatic turn recorder script)
 
 ## Verification Commands
 
