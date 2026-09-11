@@ -1,5 +1,6 @@
 import type { GenerationStatus, GenerationProject } from "../types/project";
 import { generateVisualDataUrl } from "./demo-assets";
+import { generateOpenSourceAIImage } from "./huggingface";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -21,41 +22,53 @@ export async function simulateGeneration(
   cancelledJobs.delete(project.id);
 
   if (cancelledJobs.has(project.id)) return;
-  onProgress(5, "queued", "Request added to priority cluster queue");
+  onProgress(5, "queued", "Request added to open-source inference queue");
 
-  await wait(600);
+  await wait(400);
   if (cancelledJobs.has(project.id)) return;
-  onProgress(18, "processing", "Interpreting prompt & parsing latent vectors...");
+  onProgress(20, "processing", "Dispatching to FLUX.1 / SD open-source engine...");
 
-  await wait(800);
+  let realAiOutput: string | null = null;
+
+  if (project.type === "image") {
+    try {
+      onProgress(45, "processing", `Synthesizing ${project.model} latent tensors...`);
+      const seed = Math.abs(
+        project.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      );
+
+      realAiOutput = await generateOpenSourceAIImage({
+        prompt: project.prompt,
+        model: project.model,
+        aspectRatio: project.aspectRatio,
+        seed,
+      });
+    } catch (e) {
+      console.warn("Open AI inference error:", e);
+    }
+  }
+
   if (cancelledJobs.has(project.id)) return;
   onProgress(
-    42,
+    75,
     "processing",
     project.type === "video"
-      ? "Calculating motion vector fields & keyframes..."
-      : "Synthesizing high-res diffusion step 20/50..."
+      ? "Calculating 60fps motion optical flow vectors..."
+      : realAiOutput
+      ? "Applying neural color grading & upscaling..."
+      : "Rendering procedural fallback canvas..."
   );
 
-  await wait(1000);
+  await wait(400);
   if (cancelledJobs.has(project.id)) return;
-  onProgress(
-    70,
-    "processing",
-    project.type === "video"
-      ? "Rendering optical flow & temporal stability..."
-      : "Applying volumetric lighting & optics enhancement..."
-  );
+  onProgress(95, "processing", "Finalizing asset export...");
 
-  await wait(800);
-  if (cancelledJobs.has(project.id)) return;
-  onProgress(92, "processing", "Finalizing noise reduction & upscaling...");
-
-  await wait(600);
+  await wait(300);
   if (cancelledJobs.has(project.id)) return;
 
-  // Deterministically select or create result visual
+  // Use real open AI output if available, or generate visual SVG canvas fallback
   const resultUrl =
+    realAiOutput ||
     project.outputUrl ||
     generateVisualDataUrl(
       project.title,
@@ -64,5 +77,9 @@ export async function simulateGeneration(
       Math.abs(project.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0))
     );
 
-  onProgress(100, "completed", "Generation completed successfully", resultUrl);
+  const completionMsg = realAiOutput
+    ? "AI Image generated via Open-Source FLUX Engine"
+    : "Generation completed successfully";
+
+  onProgress(100, "completed", completionMsg, resultUrl);
 }

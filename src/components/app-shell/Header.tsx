@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, Command, Loader2, Plus } from "lucide-react";
+import { Search, Menu, Command, Loader2, Plus, Cpu } from "lucide-react";
 import { useUIStore } from "../../store/ui-store";
 import { useProjectStore } from "../../store/project-store";
 import { Button } from "../ui/Button";
@@ -56,6 +56,16 @@ export const Header: React.FC = () => {
             </span>
           </div>
         )}
+
+        {/* Free Open-Source AI Model Indicator */}
+        <div
+          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/50 text-[11px] text-emerald-300 font-medium"
+          title="Powered by Free Open-Source FLUX & SD AI Models (No Tokens Required)"
+        >
+          <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+          <span>FLUX.1 Open AI</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+        </div>
 
         {/* Command Palette Trigger */}
         <button
