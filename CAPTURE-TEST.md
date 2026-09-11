@@ -1,4 +1,4 @@
-# Agent Coding Capture & Verification Details
+# Agent Coding Verification & Capture Details
 
 - **Target Application**: Higgsfield Clone
 - **Framework**: React 19 + TypeScript + Vite + Tailwind CSS v4
@@ -6,11 +6,9 @@
 - **Queue & AI Engine**: Public Pollinations image endpoint with `AbortController` cancellation, 12s timeout, lightweight URL preservation, and procedural SVG fallback.
 - **Routing Engine**: Clean `BrowserRouter` (`/create/image`, `/create/video`, `/projects`) with Cloudflare Pages `_redirects` SPA support.
 
-## Verbatim Agent Capture Logs
+## Authentic Capture Disclosure
 
-Verbatim prompt-and-final-response capture logs:
-- [.agent-logs/session-01.md](.agent-logs/session-01.md) (Verbatim prompts and final responses with model identity and canary tests)
-- [.agent-logs/record_turn.py](.agent-logs/record_turn.py) (Automatic turn recorder script)
+> **Truthful Disclosure**: Automatic prompt/final-response capture was not configured before development began. We have not reconstructed or represented historical interactions as automatically captured.
 
 ## Verification Commands
 
