@@ -165,7 +165,7 @@ export function generateVisualDataUrl(
     }
 
     <text x="30" y="${height - 40}" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="#ffffff" opacity="0.95">${title.replace(/['"<>&]/g, "")}</text>
-    <text x="30" y="${height - 20}" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="${palette[3]}" opacity="0.9">${type.toUpperCase()} • FLUXFRAME STUDIO ENGINE</text>
+    <text x="30" y="${height - 20}" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="${palette[3]}" opacity="0.9">${type.toUpperCase()} • HIGGSFIELD CLONE ENGINE</text>
   </svg>`;
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

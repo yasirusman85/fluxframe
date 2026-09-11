@@ -58,9 +58,9 @@ export const Sidebar: React.FC = () => {
           {sidebarOpen && (
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
-                Fluxframe <span className="text-violet-400 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-violet-950 border border-violet-800/50">Studio</span>
+                Higgsfield <span className="text-violet-400 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-violet-950 border border-violet-800/50">Clone</span>
               </span>
-              <span className="text-[10px] text-zinc-400 font-medium">Visual Creative Suite</span>
+              <span className="text-[10px] text-zinc-400 font-medium">AI Visual Creative Suite</span>
             </div>
           )}
         </NavLink>

@@ -168,7 +168,7 @@ export const useProjectStore = create<ProjectState>()(
       },
     }),
     {
-      name: "fluxframe-projects-storage-v1",
+      name: "higgsfield-clone-projects-storage-v1",
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         // Fix any orphaned queued/processing state on app start/reload

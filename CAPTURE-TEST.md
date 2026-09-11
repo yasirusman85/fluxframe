@@ -1,6 +1,6 @@
 # Agent Coding Capture Log
 
-- **Target Application**: Fluxframe Studio
+- **Target Application**: Higgsfield Clone
 - **Framework**: React 19 + TypeScript + Vite + Tailwind CSS v4
 - **State Engine**: Zustand persistent store
 - **Queue Simulation Engine**: Async state machine (`queued` -> `processing` -> `completed`/`failed`)

@@ -37,7 +37,7 @@ export const Header: React.FC = () => {
         </button>
 
         <div className="flex items-center gap-2 text-sm text-zinc-400 font-medium">
-          <span className="hidden sm:inline text-zinc-500">Fluxframe</span>
+          <span className="hidden sm:inline text-zinc-500">Higgsfield Clone</span>
           <span className="hidden sm:inline text-zinc-600">/</span>
           <span className="text-zinc-100 font-semibold">{getBreadcrumbs()}</span>
         </div>

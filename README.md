@@ -1,15 +1,13 @@
-# Fluxframe Studio
+# Higgsfield Clone
 
-Fluxframe Studio is a cinematic AI visual-generation creative studio application built with React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, and Zustand.
-
-![Fluxframe Studio](https://raw.githubusercontent.com/antigravity-studio/fluxframe/main/public/demo/preview.png)
+Higgsfield Clone is a cinematic AI visual-generation creative studio application built with React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, and Zustand.
 
 ## Core Experience
 
 1. **Explore Studio**: Hero gallery, quick-start tool cards, community preset prompts with 1-click prefill, and recent creations grid.
 2. **Image Studio Workspace**: Multi-model selection (`Flux Realism v2`, `Studio Cinema XL`, `Cyber Concept Pro`, `HyperDetail Ultra`), AI prompt enhancer, canvas aspect ratio picker, quality presets, seed/negative prompt controls, and live canvas preview.
 3. **Video Studio Workspace**: Starting keyframe photo upload preview, duration picker (5s / 10s), motion strength slider (1-10), and interactive 60fps motion video player with time scrubbing.
-4. **Simulated Generation Engine**: Realistic asynchronous queueing state machine (`queued` &rarr; `processing` 18% &rarr; 42% &rarr; 70% &rarr; 92% &rarr; `completed`/`failed`), cancelation handling, live stage descriptions, and retry actions.
+4. **Simulated Generation Engine**: Realistic asynchronous queueing state machine (`queued` → `processing` → `completed`/`failed`), cancelation handling, live stage descriptions, and retry actions.
 5. **Project Library & Detail View**: Grid view with search by title/prompt, filter by media type (All, Image, Video, Favorites), sort by date, Before/After latent step slider, 1-click media downloads, shareable URLs, and settings duplication.
 6. **Command Palette**: Press `Cmd+K` / `Ctrl+K` from anywhere to launch quick search across models, presets, and pages.
 
@@ -27,7 +25,21 @@ Fluxframe Studio is a cinematic AI visual-generation creative studio application
 - **State**: Zustand with `persist` middleware
 - **Styling**: Tailwind CSS v4, Vanilla CSS Custom Tokens
 - **Icons & Animation**: Lucide React, Framer Motion
-- **Testing**: Vitest, React Testing Library, jsdom
+- **Testing**: Vitest, React Testing Library, happy-dom
+
+## Deliberate Limitations
+
+- No real AI inference — uses a simulated generation engine for reliable, deterministic demo workflows.
+- No authentication, payments, or cloud storage.
+- No real-time collaboration or training models.
+
+## Accessibility
+
+- Keyboard navigation (`Cmd+K` command palette, `Escape` to close modals)
+- Visible focus indicators
+- Semantic buttons and labels
+- Reduced motion support via `prefers-reduced-motion`
+- Sufficient text contrast on dark backgrounds
 
 ## Running Locally
 
