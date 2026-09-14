@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Compass, Image as ImageIcon, Video as VideoIcon, FolderKanban, Sparkles, Command } from "lucide-react";
+import {
+  Search,
+  Compass,
+  Clapperboard,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  Store,
+  Mic,
+  LayoutGrid,
+  Grid,
+  User,
+  FolderKanban,
+  Sparkles,
+  Command,
+} from "lucide-react";
 import { useUIStore } from "../../store/ui-store";
-import { IMAGE_MODELS, VIDEO_MODELS, PRESET_PROMPTS } from "../../lib/demo-assets";
+import { IMAGE_MODELS, VIDEO_MODELS, CINEMA_MODELS, LIPSYNC_MODELS, PRESET_PROMPTS } from "../../lib/demo-assets";
 import { Modal } from "../ui/Modal";
 
 export const CommandPalette: React.FC = () => {
@@ -29,16 +43,22 @@ export const CommandPalette: React.FC = () => {
 
   const pages = [
     { title: "Explore Studio", category: "Navigation", path: "/", icon: Compass },
+    { title: "Cinema Studio 4.0", category: "Navigation", path: "/create/cinema", icon: Clapperboard },
     { title: "Image Studio Workspace", category: "Navigation", path: "/create/image", icon: ImageIcon },
     { title: "Video Studio Workspace", category: "Navigation", path: "/create/video", icon: VideoIcon },
+    { title: "Marketing Studio", category: "Navigation", path: "/create/marketing", icon: Store },
+    { title: "LipSync Studio", category: "Navigation", path: "/create/lipsync", icon: Mic },
+    { title: "Node Canvas", category: "Navigation", path: "/canvas", icon: LayoutGrid },
+    { title: "Creative AI Apps", category: "Navigation", path: "/apps", icon: Grid },
+    { title: "Account & Billing Settings", category: "Navigation", path: "/account", icon: User },
     { title: "Project Library & History", category: "Navigation", path: "/projects", icon: FolderKanban },
   ];
 
-  const models = [...IMAGE_MODELS, ...VIDEO_MODELS].map((m) => ({
-    title: `${m.name} (${m.type === "image" ? "Image" : "Video"})`,
+  const models = [...CINEMA_MODELS, ...IMAGE_MODELS, ...VIDEO_MODELS, ...LIPSYNC_MODELS].map((m) => ({
+    title: `${m.name} (${m.type.toUpperCase()})`,
     category: "Models",
-    path: `/create/${m.type}?model=${m.id}`,
-    icon: m.type === "image" ? ImageIcon : VideoIcon,
+    path: `/create/${m.type === "cinema" ? "cinema" : m.type === "lipsync" ? "lipsync" : m.type}?model=${m.id}`,
+    icon: m.type === "cinema" ? Clapperboard : m.type === "lipsync" ? Mic : m.type === "image" ? ImageIcon : VideoIcon,
   }));
 
   const presets = PRESET_PROMPTS.map((p) => ({
@@ -56,7 +76,7 @@ export const CommandPalette: React.FC = () => {
           item.title.toLowerCase().includes(query.toLowerCase()) ||
           item.category.toLowerCase().includes(query.toLowerCase())
       )
-    : allItems.slice(0, 8);
+    : allItems.slice(0, 10);
 
   return (
     <Modal

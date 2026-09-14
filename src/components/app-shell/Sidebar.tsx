@@ -2,10 +2,16 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import {
   Compass,
+  Clapperboard,
   Image as ImageIcon,
   Video as VideoIcon,
+  Store,
+  Mic,
+  LayoutGrid,
+  Grid,
   FolderKanban,
   Star,
+  User,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -26,17 +32,28 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
-      label: "Create",
+      label: "Studios & Creators",
       items: [
+        { name: "Cinema Studio", path: "/create/cinema", icon: Clapperboard, badge: "V4" },
         { name: "Image Studio", path: "/create/image", icon: ImageIcon },
         { name: "Video Studio", path: "/create/video", icon: VideoIcon, badge: "V2" },
+        { name: "Marketing Studio", path: "/create/marketing", icon: Store, badge: "Ads" },
+        { name: "LipSync Studio", path: "/create/lipsync", icon: Mic, badge: "Avatar" },
       ],
     },
     {
-      label: "Library",
+      label: "Workspaces",
+      items: [
+        { name: "Node Canvas", path: "/canvas", icon: LayoutGrid, badge: "Beta" },
+        { name: "Creative Apps", path: "/apps", icon: Grid },
+      ],
+    },
+    {
+      label: "Library & Account",
       items: [
         { name: "All Projects", path: "/projects", icon: FolderKanban },
         { name: "Favorites", path: "/projects?filter=favorites", icon: Star },
+        { name: "Account & Billing", path: "/account", icon: User },
       ],
     },
   ];

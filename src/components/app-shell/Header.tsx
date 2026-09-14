@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Search, Menu, Command, Loader2, Plus, Cpu } from "lucide-react";
 import { useUIStore } from "../../store/ui-store";
 import { useProjectStore } from "../../store/project-store";
+import { CreditPill } from "../ui/CreditPill";
 import { Button } from "../ui/Button";
 
 export const Header: React.FC = () => {
@@ -17,9 +18,15 @@ export const Header: React.FC = () => {
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
-    if (path === "/") return "Explore";
+    if (path === "/") return "Explore Studio";
+    if (path.startsWith("/create/cinema")) return "Cinema Studio 4.0";
     if (path.startsWith("/create/image")) return "Image Studio";
     if (path.startsWith("/create/video")) return "Video Studio";
+    if (path.startsWith("/create/marketing")) return "Marketing Studio";
+    if (path.startsWith("/create/lipsync")) return "LipSync Studio";
+    if (path.startsWith("/canvas")) return "Node Canvas";
+    if (path.startsWith("/apps")) return "Creative AI Apps";
+    if (path.startsWith("/account")) return "Account & Billing";
     if (path.startsWith("/projects/")) return "Project Detail";
     if (path === "/projects") return "Projects Library";
     return "Studio";
@@ -57,13 +64,16 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        {/* AI Image Generation Status Badge */}
+        {/* Header Credit Pill */}
+        <CreditPill />
+
+        {/* AI Engine Status Badge */}
         <div
           className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/50 text-[11px] text-emerald-300 font-medium"
-          title="AI image generation powered by a public Pollinations endpoint, with procedural fallback"
+          title="AI image generation powered by Pollinations Public Endpoint"
         >
           <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-          <span>AI Image Generation</span>
+          <span>Pollinations Engine</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
         </div>
 
@@ -83,7 +93,7 @@ export const Header: React.FC = () => {
         <Button
           size="sm"
           variant="primary"
-          onClick={() => navigate("/create/image")}
+          onClick={() => navigate("/create/cinema")}
           leftIcon={<Plus className="w-4 h-4" />}
           className="hidden sm:flex"
         >
@@ -91,10 +101,10 @@ export const Header: React.FC = () => {
         </Button>
 
         {/* Account Avatar */}
-        <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
+        <div className="flex items-center gap-2 pl-2 border-l border-zinc-800" onClick={() => navigate("/account")}>
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-amber-500 p-0.5 cursor-pointer hover:scale-105 transition-transform">
             <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center font-bold text-xs text-violet-300">
-              FX
+              YU
             </div>
           </div>
         </div>

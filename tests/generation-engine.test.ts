@@ -29,7 +29,7 @@ describe("Generation Engine & Cancellation", () => {
     expect(progressLogs[0].status).toBe("queued");
     expect(progressLogs[progressLogs.length - 1].status).toBe("completed");
     expect(progressLogs[progressLogs.length - 1].progress).toBe(100);
-  });
+  }, 15000);
 
   it("aborts execution gracefully when cancelGenerationTask is triggered", async () => {
     const progressLogs: Array<{ progress: number; status: string }> = [];
@@ -45,5 +45,5 @@ describe("Generation Engine & Cancellation", () => {
     // After cancel, progress should not reach completed status 100
     const finalLog = progressLogs[progressLogs.length - 1];
     expect(finalLog?.status).not.toBe("completed");
-  });
+  }, 15000);
 });

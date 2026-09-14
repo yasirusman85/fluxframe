@@ -14,6 +14,7 @@ import {
 import { IMAGE_MODELS } from "../../lib/demo-assets";
 import { useProjectStore } from "../../store/project-store";
 import { useUIStore } from "../../store/ui-store";
+import { useCreditStore } from "../../store/credit-store";
 import { simulateGeneration } from "../../lib/generation-engine";
 import { ModelSelector } from "../../components/generation/ModelSelector";
 import { RatioSelector } from "../../components/generation/RatioSelector";
@@ -42,6 +43,9 @@ export const ImageStudioPage: React.FC = () => {
 
   const { projects, createProject, updateProject, activeProcessingId } = useProjectStore();
   const { addToast } = useUIStore();
+  const { deductCredits } = useCreditStore();
+
+  const selectedModel = IMAGE_MODELS.find((m) => m.id === selectedModelId) || IMAGE_MODELS[0];
 
   const activeProject = activeProcessingId
     ? projects.find((p) => p.id === activeProcessingId)
@@ -58,6 +62,8 @@ export const ImageStudioPage: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
+
+    deductCredits(selectedModel.creditCost, `Image Studio (${selectedModel.name})`);
 
     const projectId = createProject({
       type: "image",
@@ -221,7 +227,7 @@ export const ImageStudioPage: React.FC = () => {
             leftIcon={<Wand2 className="w-5 h-5" />}
             className="w-full text-base font-bold shadow-xl glow-accent"
           >
-            {activeProject ? "Generating Image..." : "Generate Image"}
+            {activeProject ? "Generating Image..." : `Generate Image • ${selectedModel.creditCost} Credits`}
           </Button>
         </div>
       </div>

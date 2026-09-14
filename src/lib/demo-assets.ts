@@ -3,21 +3,57 @@ export interface ModelInfo {
   name: string;
   badge: string;
   description: string;
-  type: "image" | "video";
+  type: "image" | "video" | "cinema" | "lipsync";
   speed: string;
   qualityRating: string;
   isPopular?: boolean;
+  creditCost: number;
 }
 
 export interface PresetPrompt {
   id: string;
   title: string;
   prompt: string;
-  type: "image" | "video";
+  type: "image" | "video" | "cinema";
   category: string;
   model: string;
   aspectRatio: string;
   previewUrl: string;
+}
+
+export interface CameraPreset {
+  id: string;
+  name: string;
+  category: "Cinematic" | "Dynamic" | "Specialty";
+  pan: number;
+  tilt: number;
+  zoom: number;
+  dolly: number;
+  crane: number;
+  orbit: number;
+  description: string;
+}
+
+export interface CreativeApp {
+  id: string;
+  name: string;
+  badge: string;
+  tagline: string;
+  description: string;
+  iconName: string;
+  category: "Fashion" | "Branding" | "Storyboarding" | "Character";
+  creditCost: number;
+}
+
+export interface SubscriptionTier {
+  id: string;
+  name: string;
+  price: string;
+  billingPeriod: string;
+  creditsMonthly: number;
+  badge?: string;
+  isPopular?: boolean;
+  features: string[];
 }
 
 export const IMAGE_MODELS: ModelInfo[] = [
@@ -30,6 +66,7 @@ export const IMAGE_MODELS: ModelInfo[] = [
     speed: "~ 3.5s",
     qualityRating: "Balanced Preset",
     isPopular: true,
+    creditCost: 5,
   },
   {
     id: "studio-cinema-xl",
@@ -39,6 +76,7 @@ export const IMAGE_MODELS: ModelInfo[] = [
     type: "image",
     speed: "~ 4.2s",
     qualityRating: "Cinematic Preset",
+    creditCost: 8,
   },
   {
     id: "cyber-concept-pro",
@@ -48,6 +86,7 @@ export const IMAGE_MODELS: ModelInfo[] = [
     type: "image",
     speed: "~ 2.8s",
     qualityRating: "Stylized Preset",
+    creditCost: 5,
   },
   {
     id: "hyperdetail-ultra",
@@ -57,6 +96,27 @@ export const IMAGE_MODELS: ModelInfo[] = [
     type: "image",
     speed: "~ 5.0s",
     qualityRating: "High Detail",
+    creditCost: 10,
+  },
+  {
+    id: "sora-still-v1",
+    name: "Sora Ultra Frame",
+    badge: "8K Native",
+    description: "OpenAI Sora core image generator with extreme prompt adherence",
+    type: "image",
+    speed: "~ 6.0s",
+    qualityRating: "Master Render",
+    creditCost: 12,
+  },
+  {
+    id: "midjourney-v6-pro",
+    name: "Midjourney v6 Core",
+    badge: "Artistic",
+    description: "Rich painterly lighting and hyper-expressive character anatomy",
+    type: "image",
+    speed: "~ 4.0s",
+    qualityRating: "Artistic Preset",
+    creditCost: 8,
   },
 ];
 
@@ -64,37 +124,237 @@ export const VIDEO_MODELS: ModelInfo[] = [
   {
     id: "motion-v1-realism",
     name: "Motion-v1 Realism",
-    badge: "Preview",
+    badge: "Popular",
     description: "Simulated motion vector keyframing, fluid panning motion",
     type: "video",
     speed: "~ 6.5s",
-    qualityRating: "Simulated 30fps Preview",
+    qualityRating: "30fps Motion Preview",
     isPopular: true,
+    creditCost: 15,
   },
   {
     id: "cinematic-camera-pro",
     name: "Cinematic Camera Pro",
-    badge: "Camera Preview",
+    badge: "Camera Control",
     description: "Orbiting camera simulation, speed ramp animation vectors",
     type: "video",
     speed: "~ 8.0s",
     qualityRating: "Camera Motion Preview",
+    creditCost: 20,
   },
   {
     id: "anime-flux-motion",
     name: "Anime Flux Motion",
-    badge: "Anime Preview",
+    badge: "Stylized",
     description: "2D sakuga motion preview, particle dynamic simulation",
     type: "video",
     speed: "~ 5.2s",
     qualityRating: "Anime Motion Preview",
+    creditCost: 15,
+  },
+];
+
+export const CINEMA_MODELS: ModelInfo[] = [
+  {
+    id: "kling-3-cinema",
+    name: "Kling 3.0 Cinema",
+    badge: "Flagship",
+    description: "State-of-the-art multi-axis video diffusion with physics simulation",
+    type: "cinema",
+    speed: "~ 12s",
+    qualityRating: "60fps Ultra Cinema",
+    isPopular: true,
+    creditCost: 30,
+  },
+  {
+    id: "google-veo-3",
+    name: "Google Veo 3.1 Pro",
+    badge: "Google AI",
+    description: "High-fidelity spatio-temporal video model with natural camera control",
+    type: "cinema",
+    speed: "~ 14s",
+    qualityRating: "Studio Broadcast",
+    creditCost: 35,
+  },
+  {
+    id: "wan-2-6-camera",
+    name: "WAN 2.6 Camera Control",
+    badge: "3D Optics",
+    description: "Native focal length & lens aperture rendering with zero warping",
+    type: "cinema",
+    speed: "~ 10s",
+    qualityRating: "Optics Emulated",
+    creditCost: 25,
+  },
+  {
+    id: "hailuo-2-3-motion",
+    name: "Hailuo 2.3 Speed Ramping",
+    badge: "Action",
+    description: "Dynamic speed ramping, bullet time, and high-velocity camera sweeps",
+    type: "cinema",
+    speed: "~ 9s",
+    qualityRating: "Action Cam 60fps",
+    creditCost: 25,
+  },
+];
+
+export const LIPSYNC_MODELS: ModelInfo[] = [
+  {
+    id: "higgsfield-speak-2",
+    name: "Higgsfield Speak 2.0",
+    badge: "Ultra Sync",
+    description: "Phoneme-perfect lip synchronization with natural facial micro-expressions",
+    type: "lipsync",
+    speed: "~ 8s",
+    qualityRating: "Broadcasting Sync",
+    isPopular: true,
+    creditCost: 20,
+  },
+  {
+    id: "veo-talk-pro",
+    name: "Veo Talk Pro 3.1",
+    badge: "Google Core",
+    description: "Multilingual dialogue lip-sync supporting expression emotion shifts",
+    type: "lipsync",
+    speed: "~ 11s",
+    qualityRating: "4K Studio Avatar",
+    creditCost: 25,
+  },
+];
+
+export const CAMERA_PRESETS: CameraPreset[] = [
+  { id: "static", name: "Static Lock", category: "Cinematic", pan: 0, tilt: 0, zoom: 0, dolly: 0, crane: 0, orbit: 0, description: "Fixed tripodal position with subtle ambient movement" },
+  { id: "pan-right", name: "Smooth Pan Right", category: "Cinematic", pan: 45, tilt: 0, zoom: 0, dolly: 0, crane: 0, orbit: 0, description: "Horizontal camera sweep across the environment" },
+  { id: "pan-left", name: "Smooth Pan Left", category: "Cinematic", pan: -45, tilt: 0, zoom: 0, dolly: 0, crane: 0, orbit: 0, description: "Horizontal camera sweep moving left" },
+  { id: "dolly-in", name: "Dolly Push In", category: "Dynamic", pan: 0, tilt: 0, zoom: 60, dolly: 75, crane: 0, orbit: 0, description: "Physical camera approach accentuating depth" },
+  { id: "dolly-out", name: "Dolly Pull Back", category: "Dynamic", pan: 0, tilt: 0, zoom: -40, dolly: -60, crane: 0, orbit: 0, description: "Revealing wide environment shot" },
+  { id: "orbit-360", name: "360 Hero Orbit", category: "Dynamic", pan: 0, tilt: 0, zoom: 20, dolly: 0, crane: 0, orbit: 100, description: "Full circular revolution around subject" },
+  { id: "crane-up", name: "Pedestal Crane Up", category: "Cinematic", pan: 0, tilt: -20, zoom: 10, dolly: 0, crane: 80, orbit: 0, description: "Vertical camera elevation looking down" },
+  { id: "fpv-drone", name: "FPV Drone Dive", category: "Specialty", pan: 30, tilt: 50, zoom: 90, dolly: 90, crane: -60, orbit: 40, description: "High-speed acrobatic aerial perspective" },
+  { id: "bullet-time", name: "Matrix Bullet Time", category: "Specialty", pan: 0, tilt: 0, zoom: 10, dolly: 0, crane: 0, orbit: 180, description: "Time-frozen spatial orbital sweep" },
+  { id: "tracking-shot", name: "Character Tracking", category: "Cinematic", pan: 15, tilt: 0, zoom: 30, dolly: 50, crane: 0, orbit: 20, description: "Following subject movement dynamically" },
+];
+
+export const CREATIVE_APPS: CreativeApp[] = [
+  {
+    id: "style-snap",
+    name: "Style Snap V2",
+    badge: "Virtual Try-On",
+    tagline: "Instant fashion model outfit transfer",
+    description: "Upload any portrait and swap outfits into 14+ curated aesthetic styles (Techwear, Y2K, Streetwear, Haute Couture) preserving character facial identity.",
+    iconName: "Shirt",
+    category: "Fashion",
+    creditCost: 10,
+  },
+  {
+    id: "outfit-vending",
+    name: "Outfit Vending Machine",
+    badge: "Viral App",
+    tagline: "Deconstruct wardrobe into vending display",
+    description: "Generate aesthetic Japanese arcade vending machine displays filled with color-matched streetwear items and accessories.",
+    iconName: "Store",
+    category: "Fashion",
+    creditCost: 12,
+  },
+  {
+    id: "logomotion-ai",
+    name: "LogoMotion AI",
+    badge: "Branding",
+    tagline: "1-Click kinetic logo animation",
+    description: "Transform vector or PNG logos into fluid liquid metal, glowing cyber neon, or volumetric particle motion videos.",
+    iconName: "Zap",
+    category: "Branding",
+    creditCost: 15,
+  },
+  {
+    id: "shots-storyboard",
+    name: "Shots Storyboarder",
+    badge: "Filmmaking",
+    tagline: "Full script to cinematic shotlist",
+    description: "Input script loglines to auto-generate 6-panel film storyboards with camera angle notes, focal lengths, and character placement.",
+    iconName: "Clapperboard",
+    category: "Storyboarding",
+    creditCost: 20,
+  },
+  {
+    id: "soul-id-actor",
+    name: "Soul ID Character Vault",
+    badge: "AI Actor",
+    tagline: "Train reusable digital double",
+    description: "Upload photos of yourself or character concept to lock in facial structure across all future image & video generations.",
+    iconName: "UserCheck",
+    category: "Character",
+    creditCost: 50,
+  },
+];
+
+export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
+  {
+    id: "free",
+    name: "Free Trial",
+    price: "$0",
+    billingPeriod: "forever",
+    creditsMonthly: 50,
+    features: [
+      "Access to basic FLUX image models",
+      "Simulated 5s motion previews",
+      "Standard quality outputs",
+      "Community library access",
+    ],
+  },
+  {
+    id: "starter",
+    name: "Creator Starter",
+    price: "$19",
+    billingPeriod: "per month",
+    creditsMonthly: 400,
+    badge: "Popular",
+    isPopular: true,
+    features: [
+      "400 Credits / month (~80 images or 20 videos)",
+      "Access to Kling 3.0 & Studio Cinema XL",
+      "Multi-axis camera motion controls",
+      "Commercial licensing included",
+      "Priority generation queue",
+    ],
+  },
+  {
+    id: "pro",
+    name: "Cinema Pro",
+    price: "$59",
+    billingPeriod: "per month",
+    creditsMonthly: 1500,
+    badge: "Best Value",
+    features: [
+      "1,500 Credits / month (~300 images or 75 videos)",
+      "All Flagship Models (Sora, Google Veo 3.1, WAN 2.6)",
+      "4K Video & Image Upscaling",
+      "Soul ID digital double creation",
+      "Infinite Node Canvas workspace",
+      "Batch ad builder & LipSync Studio",
+    ],
+  },
+  {
+    id: "ultra",
+    name: "Studio Enterprise",
+    price: "$149",
+    billingPeriod: "per month",
+    creditsMonthly: 5000,
+    features: [
+      "5,000 Credits / month",
+      "Parallel multi-model generation",
+      "Dedicated GPU instant queue",
+      "Custom LoRA character model tuning",
+      "API developer keys & Adobe Premiere plugin",
+      "Dedicated account manager",
+    ],
   },
 ];
 
 // High quality SVG Data URIs for offline reliable demo visuals
 export function generateVisualDataUrl(
   title: string,
-  type: "image" | "video",
+  type: "image" | "video" | "cinema" | "lipsync" | "marketing",
   aspectRatio: string = "16:9",
   variant: number = 0
 ): string {
@@ -104,6 +364,7 @@ export function generateVisualDataUrl(
     ["#450a0a", "#991b1b", "#ef4444", "#fca5a5"],
     ["#0f172a", "#1e293b", "#0284c7", "#38bdf8"],
     ["#2e1065", "#701a75", "#ec4899", "#f472b6"],
+    ["#312e81", "#4338ca", "#6366f1", "#a5b4fc"],
   ];
 
   const palette = colors[variant % colors.length];
@@ -121,7 +382,7 @@ export function generateVisualDataUrl(
     height = 342;
   }
 
-  const isVideo = type === "video";
+  const isMotion = type === "video" || type === "cinema" || type === "lipsync";
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
     <defs>
@@ -153,7 +414,7 @@ export function generateVisualDataUrl(
     </g>
 
     ${
-      isVideo
+      isMotion
         ? `<g transform="translate(${width / 2}, ${height / 2})">
              <circle r="42" fill="rgba(0,0,0,0.5)" stroke="${palette[3]}" stroke-width="2"/>
              <polygon points="-10,-18 20,0 -10,18" fill="${palette[3]}"/>
@@ -199,11 +460,11 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
     title: "Neukölln Tokyo Drift Sunset",
     prompt:
       "Synthwave 1980s sportscar drifting around a wet neon street curve at sunset, reflections in rain puddles, motion blur wheels, retro wave aesthetics",
-    type: "video",
+    type: "cinema",
     category: "Automotive",
-    model: "cinematic-camera-pro",
+    model: "kling-3-cinema",
     aspectRatio: "16:9",
-    previewUrl: generateVisualDataUrl("Tokyo Drift Sunset", "video", "16:9", 2),
+    previewUrl: generateVisualDataUrl("Tokyo Drift Sunset", "cinema", "16:9", 2),
   },
   {
     id: "p-4",
@@ -232,11 +493,44 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
     title: "Hyper-Speed Galaxy Hyperjump",
     prompt:
       "First-person perspective looking out of a starship cockpit during light-speed warp jump, streaking starbursts, lens flare, intense kinetic energy",
-    type: "video",
+    type: "cinema",
     category: "Sci-Fi",
-    model: "anime-flux-motion",
+    model: "google-veo-3",
     aspectRatio: "21:9",
-    previewUrl: generateVisualDataUrl("Galaxy Hyperjump", "video", "21:9", 0),
+    previewUrl: generateVisualDataUrl("Galaxy Hyperjump", "cinema", "21:9", 5),
+  },
+  {
+    id: "p-7",
+    title: "Minimalist Luxury Perfume Spot",
+    prompt:
+      "Commercial luxury glass perfume bottle emerging from dark rippling silk water with gold dust particles and volumetric caustic lighting",
+    type: "cinema",
+    category: "Commercial",
+    model: "wan-2-6-camera",
+    aspectRatio: "9:16",
+    previewUrl: generateVisualDataUrl("Luxury Perfume Commercial", "cinema", "9:16", 0),
+  },
+  {
+    id: "p-8",
+    title: "Neo-Tokyo Cyberpunk Detective",
+    prompt:
+      "Moody noir detective wearing illuminated neon trench coat standing in rain-drenched alleyway with holograms reflecting off wet pavement",
+    type: "image",
+    category: "Cinematic",
+    model: "studio-cinema-xl",
+    aspectRatio: "16:9",
+    previewUrl: generateVisualDataUrl("Cyberpunk Detective", "image", "16:9", 1),
+  },
+  {
+    id: "p-9",
+    title: "Volcanic Island Orbit Flyby",
+    prompt:
+      "360 degree orbital camera flight around an erupting tropical island volcano with glowing orange lava rivers flowing into dark turquoise ocean waves",
+    type: "cinema",
+    category: "Nature & Motion",
+    model: "hailuo-2-3-motion",
+    aspectRatio: "16:9",
+    previewUrl: generateVisualDataUrl("Volcano Orbit Flyby", "cinema", "16:9", 2),
   },
 ];
 

@@ -10,7 +10,7 @@ export interface ProgressCallback {
     status: GenerationStatus,
     stageMessage?: string,
     resultUrl?: string,
-    providerSource?: "pollinations-ai" | "procedural-fallback"
+    providerSource?: "pollinations-ai" | "procedural-fallback" | "kling-simulated" | "veo-simulated" | "lipsync-simulated"
   ): void;
 }
 
@@ -36,15 +36,16 @@ export async function simulateGeneration(
   const isAborted = () => controller.signal.aborted;
 
   if (isAborted()) return;
-  onProgress(5, "queued", "Request added to queue");
+  onProgress(5, "queued", "Request added to high-priority GPU queue");
 
   await wait(400);
   if (isAborted()) return;
-  onProgress(20, "processing", "Connecting to Pollinations AI public endpoint...");
 
-  let resultData: PollinationsResult | null = null;
+  let providerSource: "pollinations-ai" | "procedural-fallback" | "kling-simulated" | "veo-simulated" | "lipsync-simulated" = "procedural-fallback";
 
   if (project.type === "image") {
+    onProgress(20, "processing", "Connecting to Pollinations AI public endpoint...");
+    let resultData: PollinationsResult | null = null;
     try {
       onProgress(45, "processing", `Synthesizing ${project.model} image...`);
       const seed = Math.abs(
@@ -58,51 +59,58 @@ export async function simulateGeneration(
         seed,
         signal: controller.signal,
       });
+      if (resultData) providerSource = "pollinations-ai";
     } catch (e) {
       if (!isAborted()) {
         console.warn("Pollinations request error, falling back to procedural engine:", e);
       }
     }
+  } else if (project.type === "cinema") {
+    onProgress(25, "processing", `Initializing ${project.model} spatio-temporal engine...`);
+    await wait(400);
+    if (isAborted()) return;
+    onProgress(55, "processing", `Applying camera motion matrix (Pan: ${project.cameraMotion?.pan || 0}°, Zoom: ${project.cameraMotion?.zoom || 0}%)...`);
+    await wait(400);
+    if (isAborted()) return;
+    onProgress(75, "processing", `Emulating ${project.cameraMotion?.focalLength || "35mm"} lens depth of field...`);
+    providerSource = "kling-simulated";
+  } else if (project.type === "lipsync") {
+    onProgress(30, "processing", "Analyzing phoneme audio waveform & facial mesh points...");
+    await wait(400);
+    if (isAborted()) return;
+    onProgress(65, "processing", "Synthesizing frame-accurate lipsync micro-expressions...");
+    providerSource = "lipsync-simulated";
+  } else if (project.type === "marketing") {
+    onProgress(30, "processing", "Extracting product packshots & brand aesthetic guidelines...");
+    await wait(400);
+    if (isAborted()) return;
+    onProgress(70, "processing", `Building multi-format ${project.marketingFormat || "9:16"} campaign creative...`);
+    providerSource = "veo-simulated";
+  } else {
+    onProgress(35, "processing", "Calculating 60fps motion optical flow vectors...");
   }
-
-  if (isAborted()) return;
-
-  const providerSource: "pollinations-ai" | "procedural-fallback" = resultData
-    ? "pollinations-ai"
-    : "procedural-fallback";
-
-  onProgress(
-    75,
-    "processing",
-    project.type === "video"
-      ? "Calculating 60fps motion optical flow vectors..."
-      : resultData
-      ? "AI image generated! Processing optics..."
-      : "Endpoint unavailable, generating procedural SVG fallback..."
-  );
 
   await wait(400);
   if (isAborted()) return;
-  onProgress(95, "processing", "Finalizing asset export...");
+  onProgress(95, "processing", "Finalizing asset export & 4K color grading...");
 
   await wait(300);
   if (isAborted()) return;
 
-  // Preserve remote image URL or generate SVG fallback data URL
+  const variantIndex = Math.abs(project.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0));
   const resultUrl =
-    resultData?.url ||
     project.outputUrl ||
     generateVisualDataUrl(
       project.title,
       project.type,
       project.aspectRatio,
-      Math.abs(project.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0))
+      variantIndex
     );
 
   const completionMsg =
     providerSource === "pollinations-ai"
       ? "Generated via Pollinations Public Endpoint"
-      : "Generated via Procedural Fallback Engine";
+      : `${project.model} generation complete`;
 
   activeControllers.delete(project.id);
   onProgress(100, "completed", completionMsg, resultUrl, providerSource);
