@@ -68,13 +68,13 @@ export const Sidebar: React.FC = () => {
       {/* Brand Header */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-800/60">
         <NavLink to="/" className="flex items-center gap-3 overflow-hidden">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-950/60 shrink-0">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-950/60 shrink-0">
             <Layers className="w-5 h-5 text-white" />
           </div>
           {sidebarOpen && (
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
-                Higgsfield <span className="text-violet-400 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-violet-950 border border-violet-800/50">Clone</span>
+                Higgsfield <span className="text-emerald-400 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800/50">Clone</span>
               </span>
               <span className="text-[10px] text-zinc-400 font-medium">AI Visual Creative Suite</span>
             </div>
@@ -107,7 +107,7 @@ export const Sidebar: React.FC = () => {
                   cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 group",
                     isActive
-                      ? "bg-violet-600/15 text-violet-300 font-semibold border border-violet-500/30"
+                      ? "bg-emerald-600/15 text-emerald-300 font-semibold border border-emerald-500/30"
                       : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/90 border border-transparent"
                   )
                 }
@@ -118,7 +118,7 @@ export const Sidebar: React.FC = () => {
                   <span className="flex-1 truncate flex items-center justify-between">
                     {item.name}
                     {item.badge && (
-                      <Badge variant="violet" size="sm">
+                      <Badge variant="emerald" size="sm">
                         {item.badge}
                       </Badge>
                     )}

@@ -28,11 +28,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:opacity-50 disabled:pointer-events-none rounded-xl select-none active:scale-[0.98]";
+      "inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:opacity-50 disabled:pointer-events-none rounded-xl select-none active:scale-[0.98]";
 
     const variants = {
       primary:
-        "bg-violet-600 text-white hover:bg-violet-500 shadow-lg shadow-violet-950/50 border border-violet-500/40 glow-accent",
+        "bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-950/50 border border-emerald-500/40 glow-accent",
       secondary:
         "bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700/80 border border-zinc-700/60",
       ghost:

@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --panel: #111114;
-  --panel-elevated: #18181c;
+  --background: #080a09;
+  --panel: #0d120f;
+  --panel-elevated: #131a16;
   --border: rgba(255, 255, 255, 0.09);
   --text: #fafafa;
-  --muted: #a1a1aa;
-  --accent: #8b5cf6;
-  --accent-hover: #7c3aed;
+  --muted: #9ca3af;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-glow: #00ff87;
   --danger: #ef4444;
   color-scheme: dark;
 }
@@ -31,24 +32,24 @@ body {
   background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(16, 185, 129, 0.25);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(16, 185, 129, 0.5);
 }
 
 /* Custom glowing accent utilities */
 .glow-accent {
-  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.4);
 }
 
 .glow-border {
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(16, 185, 129, 0.5);
 }
 
 .glass-panel {
-  background: rgba(17, 17, 20, 0.75);
+  background: rgba(13, 18, 15, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
