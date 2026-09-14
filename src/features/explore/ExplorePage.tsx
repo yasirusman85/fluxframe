@@ -4,11 +4,16 @@ import {
   Sparkles,
   Clapperboard,
   Image as ImageIcon,
+  Video as VideoIcon,
   Store,
   Mic,
   TrendingUp,
   ArrowRight,
   Zap,
+  Wand2,
+  Play,
+  Cpu,
+  SlidersHorizontal,
 } from "lucide-react";
 import { PRESET_PROMPTS } from "../../lib/demo-assets";
 import { useProjectStore } from "../../store/project-store";
@@ -21,178 +26,275 @@ export const ExplorePage: React.FC = () => {
   const { projects } = useProjectStore();
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [composerPrompt, setComposerPrompt] = useState("");
+  const [selectedStudio, setSelectedStudio] = useState<"cinema" | "image" | "video" | "marketing" | "lipsync">("cinema");
+  const [composerRatio, setComposerRatio] = useState("16:9");
 
   const recentProjects = projects.slice(0, 4);
 
-  const filteredPresets = PRESET_PROMPTS.filter(
-    (preset) => activeCategory === "All" || preset.category === activeCategory
-  );
+  const categories = [
+    "All",
+    "Trending Reels",
+    "Cinematic",
+    "Sci-Fi",
+    "Nature & Motion",
+    "Automotive",
+    "Commercial",
+    "Architecture",
+    "Fantasy",
+  ];
+
+  const filteredPresets = PRESET_PROMPTS.filter((preset) => {
+    if (activeCategory === "All") return true;
+    if (activeCategory === "Trending Reels") return preset.type === "cinema" || preset.type === "video";
+    return preset.category === activeCategory;
+  });
 
   const handleUsePreset = (preset: typeof PRESET_PROMPTS[0]) => {
+    const route = preset.type === "cinema" ? "cinema" : preset.type === "video" ? "video" : "image";
     navigate(
-      `/create/${preset.type}?prompt=${encodeURIComponent(preset.prompt)}&model=${preset.model}&ratio=${preset.aspectRatio}`
+      `/create/${route}?prompt=${encodeURIComponent(preset.prompt)}&model=${preset.model}&ratio=${preset.aspectRatio}`
+    );
+  };
+
+  const handleComposerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!composerPrompt.trim()) {
+      navigate(`/create/${selectedStudio}`);
+      return;
+    }
+    navigate(
+      `/create/${selectedStudio}?prompt=${encodeURIComponent(composerPrompt)}&ratio=${composerRatio}`
+    );
+  };
+
+  const handleMagicEnhance = () => {
+    if (!composerPrompt.trim()) return;
+    setComposerPrompt(
+      `${composerPrompt.trim()}, 8K ultra cinematic lighting, volumetric atmosphere, 35mm lens, depth of field f/2.8, hyperrealistic detail`
     );
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-12">
-      {/* Hero Featured Card Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-950 via-zinc-900 to-indigo-950 border border-violet-800/40 p-8 md:p-12 shadow-2xl glow-accent">
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Gen AI Visual Creative Suite
+    <div className="max-w-7xl mx-auto space-y-12 pb-16">
+      {/* Top Hero Banner — Higgsfield Obsidian Style */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800/80 p-8 md:p-14 text-center shadow-2xl space-y-6">
+        {/* Glow Spheres */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-violet-600/15 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-10 right-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 space-y-4 max-w-4xl mx-auto">
+          {/* Release Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-950/80 border border-violet-500/40 text-violet-300 text-xs font-extrabold tracking-wide uppercase shadow-lg shadow-violet-950/50">
+            <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" /> HIGGSFIELD CINEMA v4.0 MULTI-MODEL PLATFORM
           </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-            Turn prompts into <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-300">cinematic imagery</span> & 60fps motion
+
+          {/* Main Title */}
+          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-[1.1]">
+            Generative Cinema &{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-300 to-cyan-400">
+              Visual Intelligence
+            </span>
           </h1>
-          <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
-            Synthesize 8K imagery, multi-axis cinema camera choreography, automated commercial ad videos, and phoneme-perfect lip sync avatars.
+
+          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            Synthesize 8K imagery, multi-axis camera motion choreography, automated commercial ad campaigns, and phoneme-perfect lip-sync avatars.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3 pt-4">
-            <Button
-              size="lg"
-              variant="primary"
-              onClick={() => navigate("/create/cinema")}
-              leftIcon={<Clapperboard className="w-5 h-5" />}
-            >
-              Open Cinema Studio 4.0
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              onClick={() => navigate("/create/image")}
-              leftIcon={<ImageIcon className="w-5 h-5" />}
-            >
-              Open Image Studio
-            </Button>
+          {/* Studio Quick Switcher Bar */}
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-2">
+            {[
+              { id: "cinema", label: "Cinema Studio", badge: "V4.0", icon: Clapperboard, color: "text-violet-400" },
+              { id: "image", label: "Image Studio", badge: "6 Models", icon: ImageIcon, color: "text-indigo-400" },
+              { id: "video", label: "Video Studio", badge: "V2 Motion", icon: VideoIcon, color: "text-rose-400" },
+              { id: "marketing", label: "Marketing Ads", badge: "Commercial", icon: Store, color: "text-emerald-400" },
+              { id: "lipsync", label: "LipSync Avatar", badge: "4K Sync", icon: Mic, color: "text-cyan-400" },
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => navigate(`/create/${s.id}`)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-violet-500/60 hover:bg-zinc-800/90 text-xs font-bold text-zinc-200 transition-all shadow-md group"
+              >
+                <s.icon className={`w-4 h-4 ${s.color} group-hover:scale-110 transition-transform`} />
+                <span>{s.label}</span>
+                <span className="text-[10px] text-zinc-400 font-mono font-normal bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+                  {s.badge}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Ambient Decorative Shapes */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Signature Docked Floating Prompt Composer */}
+        <div className="relative z-20 max-w-3xl mx-auto pt-4">
+          <form
+            onSubmit={handleComposerSubmit}
+            className="p-3 md:p-4 rounded-3xl bg-zinc-950/90 border border-violet-500/40 shadow-2xl backdrop-blur-xl space-y-3 glow-accent text-left"
+          >
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-extrabold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <Wand2 className="w-4 h-4 text-violet-400" /> Instant Generation Composer
+              </span>
+              <button
+                type="button"
+                onClick={handleMagicEnhance}
+                className="text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
+              >
+                <Zap className="w-3.5 h-3.5" /> Magic Prompt
+              </button>
+            </div>
+
+            <textarea
+              rows={2}
+              value={composerPrompt}
+              onChange={(e) => setComposerPrompt(e.target.value)}
+              placeholder="Describe what you want to create... e.g. Cybernetic warrior in obsidian armor, 85mm portrait, volumetric smoke, dramatic cinematic lighting..."
+              className="w-full bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-3.5 text-xs md:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/70 transition-all resize-none"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              {/* Studio & Ratio Controls */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <select
+                  value={selectedStudio}
+                  onChange={(e) => setSelectedStudio(e.target.value as any)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white font-semibold focus:outline-none focus:border-violet-500"
+                >
+                  <option value="cinema">Cinema Studio (Kling 3.0 / Veo 3.1)</option>
+                  <option value="image">Image Studio (FLUX Realism)</option>
+                  <option value="video">Video Studio (Motion-v1)</option>
+                  <option value="marketing">Marketing Studio (Commercial Ad)</option>
+                  <option value="lipsync">LipSync Studio (Dialogue)</option>
+                </select>
+
+                <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
+                  {["16:9", "9:16", "1:1"].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setComposerRatio(r)}
+                      className={`px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold transition-all ${
+                        composerRatio === r
+                          ? "bg-violet-600 text-white"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                size="md"
+                variant="primary"
+                type="submit"
+                leftIcon={<Sparkles className="w-4 h-4" />}
+                className="font-bold"
+              >
+                Launch Studio & Generate
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      {/* Quick-Start Workspaces Section */}
+      {/* Featured Flagship Models Showcase Reel */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-400" /> Flagship Studios & Workspaces
+          <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-violet-400" /> Multi-Model Flagship Catalog
           </h2>
+          <span className="text-xs text-zinc-400">15+ AI Diffusion Engines Integrated</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Cinema Studio */}
-          <div
-            onClick={() => navigate("/create/cinema")}
-            className="group relative p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-violet-500/60 hover:bg-zinc-900 transition-all cursor-pointer space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-xl bg-violet-950 text-violet-400 border border-violet-800/50 flex items-center justify-center">
-                <Clapperboard className="w-6 h-6" />
+          {[
+            {
+              name: "Kling 3.0 Cinema",
+              badge: "Flagship 60fps",
+              desc: "Multi-axis camera physics, spatio-temporal video synthesis",
+              type: "cinema",
+              id: "kling-3-cinema",
+              color: "from-violet-900/60 to-zinc-900",
+              borderColor: "border-violet-500/40",
+            },
+            {
+              name: "Google Veo 3.1 Pro",
+              badge: "Google Core",
+              desc: "High-fidelity broadcast video with natural prompt adherence",
+              type: "cinema",
+              id: "google-veo-3",
+              color: "from-indigo-900/60 to-zinc-900",
+              borderColor: "border-indigo-500/40",
+            },
+            {
+              name: "Flux Realism v2",
+              badge: "8K Photoreal",
+              desc: "Extreme portrait detail, accurate lighting, complex textures",
+              type: "image",
+              id: "flux-realism-v2",
+              color: "from-cyan-900/60 to-zinc-900",
+              borderColor: "border-cyan-500/40",
+            },
+            {
+              name: "WAN 2.6 Camera Control",
+              badge: "3D Lens Optics",
+              desc: "Native focal length & aperture rendering with zero warp",
+              type: "cinema",
+              id: "wan-2-6-camera",
+              color: "from-emerald-900/60 to-zinc-900",
+              borderColor: "border-emerald-500/40",
+            },
+          ].map((m) => (
+            <div
+              key={m.id}
+              onClick={() => navigate(`/create/${m.type}?model=${m.id}`)}
+              className={`p-5 rounded-3xl bg-gradient-to-b ${m.color} border ${m.borderColor} hover:border-violet-400 hover:shadow-xl transition-all cursor-pointer space-y-3 flex flex-col justify-between group`}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant="violet" size="sm">
+                    {m.badge}
+                  </Badge>
+                  <span className="text-[10px] font-mono text-zinc-400">ENGINE</span>
+                </div>
+                <h3 className="text-base font-bold text-white group-hover:text-violet-300 transition-colors">
+                  {m.name}
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">{m.desc}</p>
               </div>
-              <Badge variant="violet">Flagship V4</Badge>
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-violet-300 transition-colors">
-              Cinema Studio 4.0
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Multi-axis camera motion, optical lens controls, and spatio-temporal video synthesis.
-            </p>
-            <div className="pt-2 text-xs font-bold text-violet-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-              Launch Cinema Studio &rarr;
-            </div>
-          </div>
 
-          {/* Image Studio */}
-          <div
-            onClick={() => navigate("/create/image")}
-            className="group relative p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500/60 hover:bg-zinc-900 transition-all cursor-pointer space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-xl bg-indigo-950 text-indigo-400 border border-indigo-800/50 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6" />
+              <div className="pt-2 text-xs font-bold text-violet-400 flex items-center justify-between">
+                <span>Create with {m.name.split(" ")[0]}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
-              <Badge variant="zinc">6 AI Engines</Badge>
             </div>
-            <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors">
-              Image Generation Studio
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Photorealistic portraits, sci-fi concept art, architecture, and live Pollinations endpoint.
-            </p>
-            <div className="pt-2 text-xs font-bold text-indigo-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-              Launch Image Studio &rarr;
-            </div>
-          </div>
-
-          {/* Marketing Studio */}
-          <div
-            onClick={() => navigate("/create/marketing")}
-            className="group relative p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/60 hover:bg-zinc-900 transition-all cursor-pointer space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/50 flex items-center justify-center">
-                <Store className="w-6 h-6" />
-              </div>
-              <Badge variant="emerald">Ad Builder</Badge>
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
-              Marketing Studio
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Product links to TikTok UGC reviews, unboxing sequences, and commercial ad campaigns.
-            </p>
-            <div className="pt-2 text-xs font-bold text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-              Launch Marketing Studio &rarr;
-            </div>
-          </div>
-
-          {/* LipSync Studio */}
-          <div
-            onClick={() => navigate("/create/lipsync")}
-            className="group relative p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-cyan-500/60 hover:bg-zinc-900 transition-all cursor-pointer space-y-3"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/50 flex items-center justify-center">
-                <Mic className="w-6 h-6" />
-              </div>
-              <Badge variant="cyan">AI Avatar</Badge>
-            </div>
-            <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
-              LipSync Studio
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Phoneme-perfect lip animation for target portraits with audio & TTS pipeline.
-            </p>
-            <div className="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-              Launch LipSync Studio &rarr;
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Featured Preset Prompts Gallery */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Community Showcase Masonry Feed */}
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-violet-400" /> Featured Community Presets
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-violet-400" /> Community Prompt Showcase
             </h2>
-            <p className="text-xs text-zinc-400">Click any preset to prefill generator controls</p>
+            <p className="text-xs text-zinc-400">Click any generation to 1-click remix prompts and camera settings</p>
           </div>
 
-          {/* Preset Category Chips */}
-          <div className="flex items-center gap-1.5 bg-zinc-900 p-1.5 rounded-2xl border border-zinc-800 overflow-x-auto">
-            {["All", "Sci-Fi", "Nature & Motion", "Automotive", "Commercial", "Architecture"].map((cat) => (
+          {/* Category Filter Chips */}
+          <div className="flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-800 p-1.5 rounded-2xl overflow-x-auto">
+            <SlidersHorizontal className="w-4 h-4 text-zinc-500 ml-2 mr-1 shrink-0" />
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                   activeCategory === cat
-                    ? "bg-violet-600 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-violet-600 text-white shadow-md shadow-violet-950/60"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
                 {cat}
@@ -201,29 +303,44 @@ export const ExplorePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Masonry Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPresets.map((preset) => (
             <div
               key={preset.id}
               onClick={() => handleUsePreset(preset)}
-              className="group relative flex flex-col rounded-2xl bg-zinc-900 border border-zinc-800/80 overflow-hidden hover:border-violet-500/60 hover:shadow-xl transition-all cursor-pointer"
+              className="group relative flex flex-col rounded-3xl bg-zinc-900/90 border border-zinc-800/90 overflow-hidden hover:border-violet-500/60 hover:shadow-2xl transition-all cursor-pointer"
             >
+              {/* Media Preview Box */}
               <div className="relative aspect-video w-full overflow-hidden bg-zinc-950">
                 <img
                   src={preset.previewUrl}
                   alt={preset.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute top-2.5 left-2.5">
+
+                {/* Overlays */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   <Badge variant={preset.type === "cinema" ? "violet" : preset.type === "video" ? "rose" : "zinc"} size="sm">
                     {preset.type.toUpperCase()}
                   </Badge>
+                  <span className="text-[10px] font-mono font-bold text-zinc-300 bg-black/60 px-2 py-0.5 rounded-full border border-white/10">
+                    {preset.aspectRatio}
+                  </span>
+                </div>
+
+                {/* Play Button Hover Effect */}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-12 h-12 rounded-full bg-violet-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 flex flex-col justify-between flex-1 gap-3">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-zinc-100 group-hover:text-violet-300 transition-colors">
+              {/* Card Meta Details */}
+              <div className="p-5 flex flex-col justify-between flex-1 gap-3">
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-base text-zinc-100 group-hover:text-violet-300 transition-colors">
                     {preset.title}
                   </h4>
                   <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
@@ -231,10 +348,10 @@ export const ExplorePage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 text-xs font-semibold text-violet-400">
-                  <span>Category: {preset.category}</span>
-                  <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                    Try Prompt <ArrowRight className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-800/60 text-xs font-bold">
+                  <span className="text-zinc-500">Model: <span className="text-zinc-300">{preset.model}</span></span>
+                  <span className="text-violet-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    Remix Prompt <ArrowRight className="w-4 h-4" />
                   </span>
                 </div>
               </div>
@@ -243,15 +360,15 @@ export const ExplorePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Recently Created Projects */}
+      {/* Recent Workspace Generations */}
       {recentProjects.length > 0 && (
-        <div className="space-y-4 pt-4 border-t border-zinc-800">
+        <div className="space-y-4 pt-6 border-t border-zinc-800">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              Recent Generations
+              Your Recent Generations
             </h2>
             <Button size="sm" variant="ghost" onClick={() => navigate("/projects")}>
-              View All Library &rarr;
+              View All Vault &rarr;
             </Button>
           </div>
 
