@@ -1,18 +1,27 @@
 {
-  "name": "higgsfield-clone",
+  "name": "fluxframe",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report",
+    "demo:record": "DEMO=1 playwright test --project=demo",
+    "demo:screenshots": "DEMO=1 SCREENSHOTS=1 playwright test --project=demo"
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "fix-webm-duration": "^1.0.6",
     "framer-motion": "^13.2.0",
+    "idb-keyval": "^6.3.0",
     "lucide-react": "^1.45.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -21,7 +30,9 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.25.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",

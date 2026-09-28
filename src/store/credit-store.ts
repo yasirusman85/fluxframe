@@ -1,98 +1,102 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createId } from "../lib/ids";
+
+export const INITIAL_CREDITS = 1000;
+export const DEMO_REFILL_AMOUNT = 500;
 
 export interface CreditTransaction {
   id: string;
-  type: "deduction" | "topup" | "grant";
+  type: "spend" | "grant" | "refund";
   amount: number;
   description: string;
+  projectId?: string;
   timestamp: string;
 }
 
-interface CreditState {
+export interface CreditState {
   balance: number;
-  totalEarned: number;
-  planTier: "prototype" | "starter" | "pro" | "ultra";
-  isTopUpModalOpen: boolean;
+  lifetimeGranted: number;
+  lifetimeSpent: number;
+  planId: string;
   history: CreditTransaction[];
-  
-  // Actions
-  deductCredits: (amount: number, description: string) => boolean;
-  addCredits: (amount: number, description: string) => void;
-  openTopUpModal: () => void;
-  closeTopUpModal: () => void;
-  resetCredits: () => void;
+  topUpOpen: boolean;
+
+  canAfford: (amount: number) => boolean;
+  /** Returns false (and does nothing) when the balance is insufficient. */
+  spend: (amount: number, description: string, projectId?: string) => boolean;
+  grant: (amount: number, description: string) => void;
+  refund: (amount: number, description: string, projectId?: string) => void;
+  setPlan: (planId: string) => void;
+  openTopUp: () => void;
+  closeTopUp: () => void;
+  reset: () => void;
 }
+
+const MAX_HISTORY = 200;
+
+function tx(type: CreditTransaction["type"], amount: number, description: string, projectId?: string): CreditTransaction {
+  return { id: createId("tx"), type, amount, description, projectId, timestamp: new Date().toISOString() };
+}
+
+const initialHistory = () => [tx("grant", INITIAL_CREDITS, "Welcome credits")];
 
 export const useCreditStore = create<CreditState>()(
   persist(
     (set, get) => ({
-      balance: 5000,
-      totalEarned: 5000,
-      planTier: "prototype",
-      isTopUpModalOpen: false,
-      history: [
-        {
-          id: "tx-init",
-          type: "grant",
-          amount: 5000,
-          description: "Initial Prototype Mode Credits",
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      balance: INITIAL_CREDITS,
+      lifetimeGranted: INITIAL_CREDITS,
+      lifetimeSpent: 0,
+      planId: "free",
+      history: initialHistory(),
+      topUpOpen: false,
 
-      deductCredits: (amount: number, description: string) => {
-        const { balance, history } = get();
-        // Dummy credits — decrement but if it goes below 0 auto refill in prototype mode
-        const newBalance = Math.max(0, balance - amount);
-        const newTx: CreditTransaction = {
-          id: `tx-${Date.now()}`,
-          type: "deduction",
-          amount,
-          description,
-          timestamp: new Date().toISOString(),
-        };
-        set({
-          balance: newBalance === 0 ? 5000 : newBalance,
-          history: [newTx, ...history].slice(0, 50),
-        });
+      canAfford: (amount) => get().balance >= amount,
+
+      spend: (amount, description, projectId) => {
+        if (amount <= 0) return true;
+        if (get().balance < amount) return false;
+        set((state) => ({
+          balance: state.balance - amount,
+          lifetimeSpent: state.lifetimeSpent + amount,
+          history: [tx("spend", amount, description, projectId), ...state.history].slice(0, MAX_HISTORY),
+        }));
         return true;
       },
 
-      addCredits: (amount: number, description: string) => {
-        const { balance, totalEarned, history } = get();
-        const newTx: CreditTransaction = {
-          id: `tx-${Date.now()}`,
-          type: "topup",
-          amount,
-          description,
-          timestamp: new Date().toISOString(),
-        };
-        set({
-          balance: balance + amount,
-          totalEarned: totalEarned + amount,
-          history: [newTx, ...history].slice(0, 50),
-        });
+      grant: (amount, description) => {
+        if (amount <= 0) return;
+        set((state) => ({
+          balance: state.balance + amount,
+          lifetimeGranted: state.lifetimeGranted + amount,
+          history: [tx("grant", amount, description), ...state.history].slice(0, MAX_HISTORY),
+        }));
       },
 
-      openTopUpModal: () => set({ isTopUpModalOpen: true }),
-      closeTopUpModal: () => set({ isTopUpModalOpen: false }),
-      resetCredits: () =>
-        set({
-          balance: 5000,
-          history: [
-            {
-              id: `tx-${Date.now()}`,
-              type: "grant",
-              amount: 5000,
-              description: "Reset Prototype Credits",
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        }),
+      refund: (amount, description, projectId) => {
+        if (amount <= 0) return;
+        set((state) => ({
+          balance: state.balance + amount,
+          lifetimeSpent: Math.max(0, state.lifetimeSpent - amount),
+          history: [tx("refund", amount, description, projectId), ...state.history].slice(0, MAX_HISTORY),
+        }));
+      },
+
+      setPlan: (planId) => set({ planId }),
+      openTopUp: () => set({ topUpOpen: true }),
+      closeTopUp: () => set({ topUpOpen: false }),
+      reset: () => set({ balance: INITIAL_CREDITS, lifetimeGranted: INITIAL_CREDITS, lifetimeSpent: 0, planId: "free", history: initialHistory() }),
     }),
     {
-      name: "higgsfield-credit-store-v1",
-    }
-  )
+      name: "fluxframe-credits-v2",
+      version: 2,
+      partialize: (state) => ({
+        balance: state.balance,
+        lifetimeGranted: state.lifetimeGranted,
+        lifetimeSpent: state.lifetimeSpent,
+        planId: state.planId,
+        history: state.history,
+      }),
+    },
+  ),
 );

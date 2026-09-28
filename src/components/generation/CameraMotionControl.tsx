@@ -1,172 +1,161 @@
-import React from "react";
-import { Camera, Sliders, Compass, Eye } from "lucide-react";
-import { CAMERA_PRESETS, type CameraPreset } from "../../lib/demo-assets";
-import type { CameraMotionSettings } from "../../types/project";
-import { Badge } from "../ui/Badge";
+import { Aperture, Camera, Focus, RotateCcw } from "lucide-react";
+import type { ReactNode } from "react";
+import type { Aperture as ApertureValue, CameraMotionSettings, FocalLength } from "../../types/project";
+import { APERTURES, CAMERA_PRESETS, DEFAULT_CAMERA, FOCAL_LENGTHS, cameraFromPreset, describeCamera } from "../../lib/catalog";
+import type { CameraPreset } from "../../lib/catalog";
+import { cn } from "../../lib/cn";
+import { Card, IconButton, Slider } from "../ui";
+import { MotionPreview } from "./MotionPreview";
 
-interface CameraMotionControlProps {
+export interface CameraMotionControlProps {
   value: CameraMotionSettings;
-  onChange: (settings: CameraMotionSettings) => void;
+  onChange: (value: CameraMotionSettings) => void;
+  /** When given, a live canvas preview of the move is rendered above the controls. */
+  previewImageUrl?: string;
+  /** 0..100, forwarded to the preview. */
+  motionStrength?: number;
+  /** Hides the summary line and packs the sliders into three columns. */
+  compact?: boolean;
 }
 
-const FOCAL_LENGTHS = ["18mm", "24mm", "35mm", "50mm", "85mm", "135mm"];
-const APERTURES = ["f/1.4", "f/2.8", "f/5.6", "f/11", "f/16"];
+type Axis = "pan" | "tilt" | "zoom" | "dolly" | "orbit" | "roll";
 
-export const CameraMotionControl: React.FC<CameraMotionControlProps> = ({
-  value,
-  onChange,
-}) => {
-  const handlePresetSelect = (preset: CameraPreset) => {
-    onChange({
-      ...value,
-      preset: preset.id,
-      pan: preset.pan,
-      tilt: preset.tilt,
-      zoom: preset.zoom,
-      dolly: preset.dolly,
-      crane: preset.crane,
-      orbit: preset.orbit,
-    });
-  };
+interface AxisSpec {
+  axis: Axis;
+  label: string;
+  min: number;
+  max: number;
+  unit: "°" | "%";
+}
+
+const AXES: AxisSpec[] = [
+  { axis: "pan", label: "Pan", min: -90, max: 90, unit: "°" },
+  { axis: "tilt", label: "Tilt", min: -90, max: 90, unit: "°" },
+  { axis: "zoom", label: "Zoom", min: -100, max: 100, unit: "%" },
+  { axis: "dolly", label: "Dolly", min: -100, max: 100, unit: "%" },
+  { axis: "orbit", label: "Orbit", min: -180, max: 180, unit: "°" },
+  { axis: "roll", label: "Roll", min: -45, max: 45, unit: "°" },
+];
+
+const CATEGORIES: CameraPreset["category"][] = ["Cinematic", "Dynamic", "Specialty"];
+
+const chipClass = (selected: boolean) =>
+  cn(
+    "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+    selected ? "border-brand-500/60 bg-brand-500/15 text-brand-200" : "border-zinc-800 bg-surface-2 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
+  );
+
+function GroupLabel({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 [&>svg]:h-3 [&>svg]:w-3">
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+const signed = (value: number, unit: string) => `${value > 0 ? "+" : ""}${value}${unit}`;
+
+/** Camera choreography editor: preset chips, per-axis sliders, lens optics and an optional live preview. */
+export function CameraMotionControl({ value, onChange, previewImageUrl, motionStrength, compact = false }: CameraMotionControlProps) {
+  const setAxis = (axis: Axis, next: number) => onChange({ ...value, [axis]: next, preset: undefined });
+  const activePreset = CAMERA_PRESETS.find((preset) => preset.id === value.preset);
+
+  const reset = () => onChange({ ...DEFAULT_CAMERA, focalLength: value.focalLength, aperture: value.aperture });
 
   return (
-    <div className="space-y-4 rounded-2xl bg-zinc-900/90 border border-zinc-800/90 p-4">
-      {/* Title */}
-      <div className="flex items-center justify-between">
-        <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
-          <Camera className="w-4 h-4 text-violet-400" /> Cinema Camera Choreography
-        </h4>
-        <Badge variant="violet" size="sm">
-          Multi-Axis WAN V2
-        </Badge>
-      </div>
+    <Card padding="sm" className="space-y-4">
+      {previewImageUrl && <MotionPreview imageUrl={previewImageUrl} camera={value} motionStrength={motionStrength} className="aspect-video rounded-xl" />}
 
-      {/* Camera Presets Selector */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
-          <Compass className="w-3.5 h-3.5 text-zinc-500" /> Cinematic Presets
-        </label>
-        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-          {CAMERA_PRESETS.map((preset) => {
-            const isSelected = value.preset === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handlePresetSelect(preset)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                  isSelected
-                    ? "bg-violet-600 text-white font-bold border border-violet-400/50 shadow-sm"
-                    : "bg-zinc-800/80 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-transparent"
-                }`}
-                title={preset.description}
-              >
-                {preset.name}
-              </button>
-            );
-          })}
+      <div className="flex items-center justify-between gap-2">
+        <GroupLabel icon={<Camera aria-hidden />}>Camera motion</GroupLabel>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-zinc-400">{activePreset ? activePreset.name : "Custom move"}</span>
+          <IconButton size="sm" label="Reset camera" icon={<RotateCcw className="h-3.5 w-3.5" aria-hidden />} onClick={reset} />
         </div>
       </div>
 
-      {/* Axis Sliders */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-        {/* Pan */}
-        <div className="space-y-1 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/60">
-          <div className="flex justify-between text-[11px] font-medium text-zinc-400">
-            <span>Pan (Horizontal)</span>
-            <span className="font-mono text-violet-400 font-bold">{value.pan > 0 ? `+${value.pan}°` : `${value.pan}°`}</span>
+      <div role="group" aria-label="Camera presets" className="space-y-2">
+        {CATEGORIES.map((category) => (
+          <div key={category} className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 w-14 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{category}</span>
+            {CAMERA_PRESETS.filter((preset) => preset.category === category).map((preset) => {
+              const selected = preset.id === value.preset;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={selected}
+                  title={preset.description}
+                  data-testid={`camera-preset-${preset.id}`}
+                  onClick={() => onChange(cameraFromPreset(preset, value))}
+                  className={chipClass(selected)}
+                >
+                  {preset.name}
+                </button>
+              );
+            })}
           </div>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            value={value.pan}
-            onChange={(e) => onChange({ ...value, pan: Number(e.target.value), preset: undefined })}
-            className="w-full accent-violet-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-          />
-        </div>
-
-        {/* Tilt */}
-        <div className="space-y-1 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/60">
-          <div className="flex justify-between text-[11px] font-medium text-zinc-400">
-            <span>Tilt (Vertical)</span>
-            <span className="font-mono text-violet-400 font-bold">{value.tilt > 0 ? `+${value.tilt}°` : `${value.tilt}°`}</span>
-          </div>
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            value={value.tilt}
-            onChange={(e) => onChange({ ...value, tilt: Number(e.target.value), preset: undefined })}
-            className="w-full accent-violet-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-          />
-        </div>
-
-        {/* Zoom */}
-        <div className="space-y-1 bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/60">
-          <div className="flex justify-between text-[11px] font-medium text-zinc-400">
-            <span>Zoom (Depth)</span>
-            <span className="font-mono text-violet-400 font-bold">{value.zoom > 0 ? `+${value.zoom}%` : `${value.zoom}%`}</span>
-          </div>
-          <input
-            type="range"
-            min="-100"
-            max="100"
-            value={value.zoom}
-            onChange={(e) => onChange({ ...value, zoom: Number(e.target.value), preset: undefined })}
-            className="w-full accent-violet-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-          />
-        </div>
+        ))}
       </div>
 
-      {/* Advanced Optics Emulation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-zinc-800/60 text-xs">
-        {/* Focal Length */}
+      <div className={cn("grid", compact ? "grid-cols-3 gap-x-3 gap-y-2" : "grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2")}>
+        {AXES.map(({ axis, label, min, max, unit }) => (
+          <Slider
+            key={axis}
+            label={label}
+            value={value[axis]}
+            min={min}
+            max={max}
+            onChange={(next) => setAxis(axis, next)}
+            formatValue={(current) => signed(current, unit)}
+            testId={`camera-slider-${axis}`}
+          />
+        ))}
+      </div>
+
+      <div className={cn("grid gap-3", compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5 text-zinc-500" /> Lens Focal Length
-          </label>
-          <div className="flex flex-wrap gap-1">
-            {FOCAL_LENGTHS.map((focal) => (
+          <GroupLabel icon={<Focus aria-hidden />}>Focal length</GroupLabel>
+          <div role="group" aria-label="Focal length" className="flex flex-wrap gap-1.5">
+            {FOCAL_LENGTHS.map((focal: FocalLength) => (
               <button
                 key={focal}
                 type="button"
+                aria-pressed={value.focalLength === focal}
+                data-testid={`focal-${focal}`}
                 onClick={() => onChange({ ...value, focalLength: focal })}
-                className={`px-2 py-1 rounded text-[11px] font-mono font-medium transition-all ${
-                  value.focalLength === focal
-                    ? "bg-violet-600 text-white font-bold"
-                    : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                }`}
+                className={cn(chipClass(value.focalLength === focal), "font-mono")}
               >
                 {focal}
               </button>
             ))}
           </div>
         </div>
-
-        {/* Aperture */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1">
-            <Sliders className="w-3.5 h-3.5 text-zinc-500" /> Aperture (Depth of Field)
-          </label>
-          <div className="flex flex-wrap gap-1">
-            {APERTURES.map((ap) => (
+          <GroupLabel icon={<Aperture aria-hidden />}>Aperture</GroupLabel>
+          <div role="group" aria-label="Aperture" className="flex flex-wrap gap-1.5">
+            {APERTURES.map((aperture: ApertureValue) => (
               <button
-                key={ap}
+                key={aperture}
                 type="button"
-                onClick={() => onChange({ ...value, aperture: ap })}
-                className={`px-2 py-1 rounded text-[11px] font-mono font-medium transition-all ${
-                  value.aperture === ap
-                    ? "bg-violet-600 text-white font-bold"
-                    : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                }`}
+                aria-pressed={value.aperture === aperture}
+                data-testid={`aperture-${aperture.replace("f/", "")}`}
+                onClick={() => onChange({ ...value, aperture })}
+                className={cn(chipClass(value.aperture === aperture), "font-mono")}
               >
-                {ap}
+                {aperture}
               </button>
             ))}
           </div>
         </div>
       </div>
-    </div>
+
+      {!compact && (
+        <p className="rounded-lg border border-zinc-800/80 bg-surface-2/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-400" aria-live="polite">
+          {describeCamera(value)}
+        </p>
+      )}
+    </Card>
   );
-};
+}

@@ -1,49 +1,63 @@
-import React, { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Wand2 } from "lucide-react";
-import { Button } from "../ui/Button";
+import { PROMPT_ENHANCERS } from "../../lib/catalog";
+import { Button } from "../ui";
 
 export interface PromptEnhancerProps {
   prompt: string;
-  onEnhance: (enhancedPrompt: string) => void;
+  onEnhance: (next: string) => void;
+  /** Key of PROMPT_ENHANCERS; defaults to "cinematic". */
+  style?: keyof typeof PROMPT_ENHANCERS;
+  disabled?: boolean;
 }
 
-export const PromptEnhancer: React.FC<PromptEnhancerProps> = ({
-  prompt,
-  onEnhance,
-}) => {
-  const [isEnhancing, setIsEnhancing] = useState(false);
+const ENHANCE_DELAY_MS = 400;
 
-  const enhanceModifiers = [
-    "hyper-realistic 8k render, octane engine, volumetric lighting, photorealistic textures",
-    "cinematic 35mm film grain, anamorphic lens flare, dramatic rim lighting, shallow depth of field",
-    "vibrant cyberpunk neon glow, dark synthwave atmospheric fog, ultra detailed 16k",
-    "award-winning studio lighting, golden ratio composition, masterpiece quality",
-  ];
+function enhancerFor(style?: string): string {
+  return PROMPT_ENHANCERS[style ?? "cinematic"] ?? PROMPT_ENHANCERS.cinematic;
+}
 
-  const handleMagicEnhance = () => {
-    if (!prompt.trim()) return;
-    setIsEnhancing(true);
+/** Deterministic: appends the style's enhancer clause and capitalises the first letter. */
+function enhancePrompt(prompt: string, enhancer: string): string {
+  const base = prompt.trim().replace(/[\s,.;]+$/, "");
+  const next = `${base}, ${enhancer}`.trim();
+  return next.charAt(0).toUpperCase() + next.slice(1);
+}
 
-    setTimeout(() => {
-      const modifier = enhanceModifiers[Math.floor(Math.random() * enhanceModifiers.length)];
-      const enhanced = `${prompt.trim()}, ${modifier}`;
-      onEnhance(enhanced);
-      setIsEnhancing(false);
-    }, 600);
+export function PromptEnhancer({ prompt, onEnhance, style, disabled }: PromptEnhancerProps) {
+  const [loading, setLoading] = useState(false);
+  const timer = useRef<number>(0);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const enhancer = enhancerFor(style);
+  const trimmed = prompt.trim();
+  const alreadyEnhanced = trimmed.toLowerCase().includes(enhancer.toLowerCase());
+  const blocked = Boolean(disabled) || trimmed.length === 0 || alreadyEnhanced;
+
+  const handleClick = () => {
+    if (blocked || loading) return;
+    setLoading(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setLoading(false);
+      onEnhance(enhancePrompt(prompt, enhancer));
+    }, ENHANCE_DELAY_MS);
   };
 
   return (
     <Button
-      type="button"
       variant="ghost"
       size="sm"
-      onClick={handleMagicEnhance}
-      isLoading={isEnhancing}
-      disabled={!prompt.trim()}
-      leftIcon={<Wand2 className="w-3.5 h-3.5 text-violet-400" />}
-      className="text-xs text-violet-300 hover:text-violet-200 hover:bg-violet-950/60 border border-violet-900/40"
+      leftIcon={<Wand2 className="h-3.5 w-3.5 text-brand-400" aria-hidden />}
+      isLoading={loading}
+      disabled={blocked}
+      onClick={handleClick}
+      data-testid="enhance-button"
+      title={alreadyEnhanced ? "This prompt already includes the enhancer" : `Add ${style ?? "cinematic"} detail to the prompt`}
+      className="text-brand-300 hover:text-brand-200"
     >
-      Magic Enhance
+      {loading ? "Enhancing…" : "Enhance"}
     </Button>
   );
-};
+}

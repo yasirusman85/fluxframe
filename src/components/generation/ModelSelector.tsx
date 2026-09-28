@@ -1,105 +1,209 @@
-import React, { useState } from "react";
-import { Cpu, Sparkles, ChevronDown } from "lucide-react";
-import type { ModelInfo } from "../../lib/demo-assets";
-import { Badge } from "../ui/Badge";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Check, ChevronDown, Cpu, Globe } from "lucide-react";
+import type { ModelInfo } from "../../lib/catalog";
+import { cn } from "../../lib/cn";
+import { Badge } from "../ui";
 
-interface ModelSelectorProps {
+export interface ModelSelectorProps {
   models: ModelInfo[];
-  selectedModelId: string;
-  onSelectModel: (modelId: string) => void;
+  value: string;
+  onChange: (id: string) => void;
+  /** Visible label; defaults to a visually hidden "Model". */
   label?: string;
+  /** Root test id; defaults to "model-selector". */
+  testId?: string;
 }
 
-export const ModelSelector: React.FC<ModelSelectorProps> = ({
-  models,
-  selectedModelId,
-  onSelectModel,
-  label = "Select AI Generation Engine",
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedModel = models.find((m) => m.id === selectedModelId) || models[0];
+function EngineLine({ engine }: { engine: ModelInfo["engine"] }) {
+  const pollinations = engine === "pollinations";
+  const Icon = pollinations ? Globe : Cpu;
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-zinc-400">
+      <Icon className="h-3 w-3" aria-hidden />
+      {pollinations ? "via Pollinations" : "In-browser engine"}
+    </span>
+  );
+}
+
+function ModelDetails({ model, nameId }: { model: ModelInfo; nameId?: string }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-2">
+        <span id={nameId} className="truncate text-sm font-semibold text-zinc-100">
+          {model.name}
+        </span>
+        <Badge size="sm" variant={model.isPopular ? "brand" : "neutral"}>
+          {model.badge}
+        </Badge>
+      </div>
+      <p className="truncate text-xs text-zinc-400">{model.description}</p>
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+        <span className="font-mono font-semibold text-amber-300">{model.creditCost} credits</span>
+        <span className="text-zinc-400">{model.speed}</span>
+        <EngineLine engine={model.engine} />
+      </div>
+    </div>
+  );
+}
+
+/** Accessible listbox-style dropdown for picking an engine. */
+export function ModelSelector({ models, value, onChange, label, testId }: ModelSelectorProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const baseId = useId();
+  const labelId = `${baseId}-label`;
+  const valueId = `${baseId}-value`;
+  const listId = `${baseId}-listbox`;
+
+  const selectedIndex = Math.max(
+    0,
+    models.findIndex((model) => model.id === value),
+  );
+  const selected = models.find((model) => model.id === value);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+
+  const close = useCallback((refocus = false) => {
+    setOpen(false);
+    if (refocus) triggerRef.current?.focus();
+  }, []);
+
+  const openList = () => {
+    setActiveIndex(selectedIndex);
+    setOpen(true);
+  };
+
+  const select = (id: string) => {
+    onChange(id);
+    close(true);
+  };
+
+  // Roving focus: the active option owns focus while the list is open.
+  useEffect(() => {
+    if (!open) return;
+    optionRefs.current[activeIndex]?.focus();
+  }, [open, activeIndex]);
+
+  // Click outside closes.
+  useEffect(() => {
+    if (!open) return;
+    const onMouseDown = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, [open]);
+
+  const onTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      openList();
+    }
+  };
+
+  const onListKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const count = models.length;
+    if (count === 0) return;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActiveIndex((index) => (index + 1) % count);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setActiveIndex((index) => (index - 1 + count) % count);
+        break;
+      case "Home":
+        event.preventDefault();
+        setActiveIndex(0);
+        break;
+      case "End":
+        event.preventDefault();
+        setActiveIndex(count - 1);
+        break;
+      case "Enter":
+      case " ": {
+        event.preventDefault();
+        const model = models[activeIndex];
+        if (model) select(model.id);
+        break;
+      }
+      case "Escape":
+        event.preventDefault();
+        close(true);
+        break;
+      case "Tab":
+        setOpen(false);
+        break;
+      default:
+    }
+  };
 
   return (
-    <div className="relative space-y-1.5">
-      <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-        <span className="flex items-center gap-1.5">
-          <Cpu className="w-4 h-4 text-violet-400" /> {label}
-        </span>
-        <span className="text-[11px] text-zinc-400 font-normal">
-          {models.length} Models Available
-        </span>
-      </label>
-
-      {/* Selected Model Card Trigger */}
+    <div ref={rootRef} data-testid={testId ?? "model-selector"} className="relative space-y-1.5">
+      <span id={labelId} className={label ? "block text-xs font-semibold text-zinc-300" : "sr-only"}>
+        {label ?? "Model"}
+      </span>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-violet-500/60 transition-all text-left group"
+        data-testid="model-selector-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        aria-labelledby={`${labelId} ${valueId}`}
+        onClick={() => (open ? close() : openList())}
+        onKeyDown={onTriggerKeyDown}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-xl border bg-surface-2 px-3.5 py-2.5 text-left transition-colors",
+          open ? "border-brand-500/70" : "border-zinc-800 hover:border-zinc-700",
+        )}
       >
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-violet-950/80 border border-violet-800/50 flex items-center justify-center text-violet-400 shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div className="truncate space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-white group-hover:text-violet-300 transition-colors">
-                {selectedModel?.name}
-              </span>
-              <Badge variant="violet" size="sm">
-                {selectedModel?.badge}
-              </Badge>
-            </div>
-            <p className="text-xs text-zinc-400 truncate leading-tight">
-              {selectedModel?.description}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0 ml-2">
-          <div className="text-right text-[11px] hidden sm:block">
-            <div className="font-mono text-amber-400 font-bold">
-              {selectedModel?.creditCost} Credits
-            </div>
-            <div className="text-zinc-500">{selectedModel?.speed}</div>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-        </div>
+        {selected ? (
+          <ModelDetails model={selected} nameId={valueId} />
+        ) : (
+          <span id={valueId} className="flex-1 text-sm text-zinc-400">
+            Choose a model
+          </span>
+        )}
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-zinc-400 transition-transform", open && "rotate-180")} aria-hidden />
       </button>
 
-      {/* Dropdown Popover */}
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-40 mt-1 rounded-2xl bg-zinc-950 border border-zinc-800 p-2 shadow-2xl space-y-1 max-h-72 overflow-y-auto animate-fadeIn">
-          {models.map((m) => {
-            const isSelected = m.id === selectedModelId;
+      {open && (
+        <div
+          role="listbox"
+          id={listId}
+          aria-labelledby={labelId}
+          tabIndex={-1}
+          onKeyDown={onListKeyDown}
+          className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-xl border border-zinc-700/80 bg-surface-2 p-1 shadow-2xl animate-slide-up"
+        >
+          {models.map((model, index) => {
+            const isSelected = model.id === value;
+            const isActive = index === activeIndex;
             return (
               <div
-                key={m.id}
-                onClick={() => {
-                  onSelectModel(m.id);
-                  setIsOpen(false);
+                key={model.id}
+                ref={(element) => {
+                  optionRefs.current[index] = element;
                 }}
-                className={`flex items-start justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                  isSelected
-                    ? "bg-violet-950/60 border border-violet-500/50"
-                    : "hover:bg-zinc-900 border border-transparent"
-                }`}
+                role="option"
+                id={`${baseId}-option-${index}`}
+                aria-selected={isSelected}
+                tabIndex={isActive ? 0 : -1}
+                data-testid={`model-option-${model.id}`}
+                onClick={() => select(model.id)}
+                onMouseEnter={() => setActiveIndex(index)}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 outline-none transition-colors",
+                  isActive && "bg-zinc-800/70",
+                  isSelected && "bg-brand-500/10",
+                )}
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm ${isSelected ? "text-violet-300" : "text-white"}`}>
-                      {m.name}
-                    </span>
-                    <Badge variant={isSelected ? "violet" : "zinc"} size="sm">
-                      {m.badge}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed">{m.description}</p>
-                </div>
-
-                <div className="text-right text-[11px] shrink-0 ml-3">
-                  <span className="font-mono font-bold text-amber-400">{m.creditCost} Credits</span>
-                  <div className="text-zinc-500">{m.speed}</div>
-                </div>
+                <ModelDetails model={model} />
+                <Check className={cn("mt-0.5 h-4 w-4 shrink-0 text-brand-400", !isSelected && "invisible")} aria-hidden />
               </div>
             );
           })}
@@ -107,4 +211,4 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       )}
     </div>
   );
-};
+}

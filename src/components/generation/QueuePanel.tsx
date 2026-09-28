@@ -1,127 +1,148 @@
-import React from "react";
-import { Loader2, AlertCircle, RefreshCw, X, Sparkles, CheckCircle2 } from "lucide-react";
-import type { GenerationProject } from "../../types/project";
-import { useProjectStore } from "../../store/project-store";
-import { useUIStore } from "../../store/ui-store";
-import { Button } from "../ui/Button";
+import { AlertCircle, Ban, CheckCircle2, Eye, Loader2, RotateCcw, X } from "lucide-react";
+import type { ReactNode } from "react";
+import type { GenerationProject, GenerationStatus } from "../../types/project";
+import { TYPE_LABELS } from "../../types/project";
+import { cancelGeneration, retryGeneration } from "../../lib/generation-runner";
+import { cn } from "../../lib/cn";
+import { Badge, Button, Card, IconButton, ProgressBar } from "../ui";
+import { projectMeta } from "../media/project-meta";
 
 export interface QueuePanelProps {
   project: GenerationProject;
-  stageMessage?: string;
-  onViewDetails?: () => void;
+  /** Shown as a "View" action once the job has completed. */
+  onView?: () => void;
+  /** Single-row variant for menus and stacked lists. */
+  compact?: boolean;
 }
 
-export const QueuePanel: React.FC<QueuePanelProps> = ({
-  project,
-  stageMessage = "Processing generation pipeline...",
-  onViewDetails,
-}) => {
-  const { cancelGeneration, retryGeneration } = useProjectStore();
-  const { addToast } = useUIStore();
+const STATUS_ICONS: Record<GenerationStatus, ReactNode> = {
+  queued: <Loader2 className="h-4 w-4 animate-spin text-brand-400" aria-hidden />,
+  processing: <Loader2 className="h-4 w-4 animate-spin text-brand-400" aria-hidden />,
+  completed: <CheckCircle2 className="h-4 w-4 text-brand-400" aria-hidden />,
+  failed: <AlertCircle className="h-4 w-4 text-rose-400" aria-hidden />,
+  cancelled: <Ban className="h-4 w-4 text-zinc-400" aria-hidden />,
+};
 
-  const handleCancel = () => {
-    cancelGeneration(project.id);
-    addToast("Generation process cancelled", "info");
-  };
+const STATUS_TEXT: Record<GenerationStatus, string> = {
+  queued: "Queued",
+  processing: "Processing",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
 
-  const handleRetry = () => {
-    retryGeneration(project.id);
-    addToast("Retrying generation...", "info");
-  };
+function statusLine(project: GenerationProject): string {
+  switch (project.status) {
+    case "queued":
+      return project.stageMessage ?? "Waiting for a free slot…";
+    case "processing":
+      return project.stageMessage ?? "Rendering…";
+    case "completed":
+      return project.renderMs ? `Completed in ${(project.renderMs / 1000).toFixed(1)}s` : "Completed";
+    case "failed":
+      return project.errorMessage ?? "Generation failed.";
+    case "cancelled":
+      return project.errorMessage && project.errorMessage !== "Cancelled" ? `Cancelled · ${project.errorMessage}` : "Cancelled";
+    default:
+      return "";
+  }
+}
 
-  const isFailed = project.status === "failed";
-  const isCompleted = project.status === "completed";
+/** Live view of one generation job with progress, stage text and cancel / retry / view actions. */
+export function QueuePanel({ project, onView, compact = false }: QueuePanelProps) {
+  const { status } = project;
+  const inFlight = status === "queued" || status === "processing";
+  const canRetry = status === "failed" || status === "cancelled";
+  const progress = Math.max(0, Math.min(100, project.progress));
 
-  return (
-    <div className="w-full rounded-2xl bg-zinc-900 border border-zinc-800 p-5 shadow-2xl space-y-4">
-      {/* Header Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {isCompleted ? (
-            <div className="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/50">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          ) : isFailed ? (
-            <div className="p-2 rounded-xl bg-red-950 text-red-400 border border-red-800/50">
-              <AlertCircle className="w-5 h-5" />
+  const retry = () => void retryGeneration(project.id);
+  const cancel = () => cancelGeneration(project.id);
+
+  if (compact) {
+    return (
+      <div
+        data-testid="queue-panel"
+        data-status={status}
+        className="flex items-center gap-2.5 rounded-xl border border-zinc-800/60 bg-surface-2/60 px-2.5 py-2"
+      >
+        <span className="shrink-0">{STATUS_ICONS[status]}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-xs font-semibold text-zinc-100">{project.title}</span>
+            <Badge size="sm" variant="neutral">
+              {TYPE_LABELS[project.type]}
+            </Badge>
+          </div>
+          {inFlight ? (
+            <div className="mt-1 flex items-center gap-2">
+              <ProgressBar value={progress} indeterminate={status === "queued"} size="sm" label={`${project.title} progress`} className="max-w-[160px]" />
+              <span className="truncate text-[10px] text-zinc-400">{statusLine(project)}</span>
             </div>
           ) : (
-            <div className="p-2 rounded-xl bg-violet-950 text-violet-400 border border-violet-800/50">
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </div>
+            <p className={cn("truncate text-[10px]", status === "failed" ? "text-rose-300" : "text-zinc-400")}>{statusLine(project)}</p>
           )}
-
-          <div>
-            <h4 className="font-bold text-sm text-zinc-100 line-clamp-1">
-              {project.title}
-            </h4>
-            <p className="text-xs text-zinc-400">
-              {project.model} • {project.aspectRatio}
-            </p>
-          </div>
         </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {inFlight && <IconButton size="sm" label="Cancel generation" icon={<X className="h-3.5 w-3.5" aria-hidden />} onClick={cancel} data-testid="queue-cancel" />}
+          {canRetry && <IconButton size="sm" label="Retry generation" icon={<RotateCcw className="h-3.5 w-3.5" aria-hidden />} onClick={retry} data-testid="queue-retry" />}
+          {status === "completed" && onView && <IconButton size="sm" label="View output" icon={<Eye className="h-3.5 w-3.5" aria-hidden />} onClick={onView} data-testid="queue-view" />}
+        </div>
+      </div>
+    );
+  }
 
-        {!isCompleted && !isFailed && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleCancel}
-            leftIcon={<X className="w-3.5 h-3.5 text-red-400" />}
-            className="text-xs text-red-400 hover:bg-red-950/40"
-          >
-            Cancel
-          </Button>
-        )}
-
-        {isFailed && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleRetry}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-          >
-            Retry
-          </Button>
-        )}
+  return (
+    <Card padding="sm" data-testid="queue-panel" data-status={status} className="space-y-3">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 shrink-0" title={STATUS_TEXT[status]}>
+          {STATUS_ICONS[status]}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Badge size="sm" variant="neutral">
+              {TYPE_LABELS[project.type]}
+            </Badge>
+            <span className="truncate text-sm font-semibold text-zinc-100">{project.title}</span>
+          </div>
+          <p className="truncate text-[11px] text-zinc-400">{projectMeta(project)}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {inFlight && (
+            <Button size="sm" variant="outline" leftIcon={<X className="h-3.5 w-3.5" aria-hidden />} onClick={cancel} data-testid="queue-cancel">
+              Cancel
+            </Button>
+          )}
+          {canRetry && (
+            <Button size="sm" variant="secondary" leftIcon={<RotateCcw className="h-3.5 w-3.5" aria-hidden />} onClick={retry} data-testid="queue-retry">
+              Retry
+            </Button>
+          )}
+          {status === "completed" && onView && (
+            <Button size="sm" variant="secondary" leftIcon={<Eye className="h-3.5 w-3.5" aria-hidden />} onClick={onView} data-testid="queue-view">
+              View
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Progress Bar & Status Text */}
-      {!isFailed && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-zinc-300 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              {stageMessage}
+      {inFlight && (
+        <div className="space-y-1.5">
+          <ProgressBar value={progress} indeterminate={status === "queued"} size="sm" label={`${project.title} progress`} />
+          <div className="flex items-center justify-between gap-3 text-[11px]">
+            <span className="truncate text-zinc-400" aria-live="polite">
+              {statusLine(project)}
             </span>
-            <span className="text-violet-400 font-mono font-bold">
-              {project.progress}%
-            </span>
-          </div>
-
-          <div className="w-full bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800">
-            <div
-              className="bg-gradient-to-r from-violet-600 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-300 shadow-md shadow-violet-500/50"
-              style={{ width: `${project.progress}%` }}
-            />
+            <span className="font-mono tabular-nums text-zinc-400">{status === "queued" ? "—" : `${Math.round(progress)}%`}</span>
           </div>
         </div>
       )}
-
-      {/* Error Message Alert */}
-      {isFailed && (
-        <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-xs text-red-300">
-          {project.errorMessage || "Simulated model cluster failure. Please click retry."}
-        </div>
+      {status === "failed" && (
+        <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs leading-relaxed text-rose-200">
+          {statusLine(project)}
+        </p>
       )}
-
-      {/* Action to view detail once finished */}
-      {isCompleted && onViewDetails && (
-        <div className="pt-2 flex justify-end">
-          <Button size="sm" variant="primary" onClick={onViewDetails}>
-            View Generated Output &rarr;
-          </Button>
-        </div>
-      )}
-    </div>
+      {status === "cancelled" && <p className="text-xs text-zinc-400">{statusLine(project)}</p>}
+      {status === "completed" && <p className="text-xs text-brand-300">{statusLine(project)}</p>}
+    </Card>
   );
-};
+}

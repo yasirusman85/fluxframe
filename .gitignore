@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/e2e/.auth/
+
+# Demo recordings (generated locally with `npm run demo:record`)
+/demo/*.webm
+/demo/*.mp4
+/coverage/

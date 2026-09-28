@@ -1,8 +1,7 @@
 import React from "react";
 import { AppProviders } from "./providers";
 
-export const App: React.FC = () => {
-  return <AppProviders />;
-};
+/** Application root — mounted by `src/main.tsx`. */
+export const App: React.FC = () => <AppProviders />;
 
 export default App;

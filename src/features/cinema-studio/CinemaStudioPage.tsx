@@ -1,321 +1,300 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Sparkles,
-  Clapperboard,
-  Upload,
-  Zap,
-  Film,
-  Maximize2,
-} from "lucide-react";
-import { CINEMA_MODELS } from "../../lib/demo-assets";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, Clapperboard, ClipboardList, Film, Sparkles } from "lucide-react";
+import { Badge, Button, Card, Dropzone, EmptyState, Kbd, PageHeader, SectionTitle, Slider, Textarea } from "../../components/ui";
+import { ModelSelector } from "../../components/generation/ModelSelector";
+import { RatioSelector } from "../../components/generation/RatioSelector";
+import { DurationSelector } from "../../components/generation/DurationSelector";
+import { CameraMotionControl } from "../../components/generation/CameraMotionControl";
+import { PromptEnhancer } from "../../components/generation/PromptEnhancer";
+import { OutputCanvas } from "../../components/media/OutputCanvas";
+import { MediaCard } from "../../components/media/MediaCard";
+import { useGeneration } from "../../hooks/useGeneration";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { useAssetUrl } from "../../hooks/useAsset";
 import { useProjectStore } from "../../store/project-store";
 import { useCreditStore } from "../../store/credit-store";
-import { CameraMotionControl } from "../../components/generation/CameraMotionControl";
-import { ModelSelector } from "../../components/generation/ModelSelector";
-import { QueuePanel } from "../../components/generation/QueuePanel";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
-import type { CameraMotionSettings } from "../../types/project";
-import { simulateGeneration } from "../../lib/generation-engine";
+import { useUIStore } from "../../store/ui-store";
+import { CINEMA_MODELS, VIDEO_FPS, describeCamera } from "../../lib/catalog";
+import { parseStudioParams } from "../../lib/query-params";
+import { cssAspect, videoDimensionsFor } from "../../lib/aspect";
+import { cn } from "../../lib/cn";
+import { storeUploadedImage } from "../../lib/image-utils";
+import type { GenerationProject } from "../../types/project";
+import {
+  CINEMA_RATIO_IDS,
+  MAX_MOTION_STRENGTH,
+  MIN_MOTION_STRENGTH,
+  describeLook,
+  findCinemaModel,
+  formFromParams,
+  formFromProject,
+} from "./prefill";
+import type { CinemaStudioForm } from "./prefill";
+
+/** Studio-level cap: the button turns into "Queue full" beyond this many cinema jobs. */
+const MAX_ACTIVE_JOBS = 3;
+const MAX_RECENT = 4;
+const PROMPT_PLACEHOLDER = "Rain-slick neon street, a vintage coupé drifting through the corner, reflections streaking across the asphalt…";
+
+/** One row of the shot sheet. `wide` spans the whole grid (used for the camera move). */
+function ShotRow({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={cn("min-w-0 space-y-0.5", wide && "col-span-2 sm:col-span-3")}>
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{label}</dt>
+      <dd className="text-xs font-medium leading-relaxed text-zinc-100">{children}</dd>
+    </div>
+  );
+}
 
 export const CinemaStudioPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { projects, activeProcessingId, createProject, updateProject } = useProjectStore();
-  const { deductCredits } = useCreditStore();
+  useDocumentTitle("Cinema Studio");
+  const [searchParams] = useSearchParams();
+  const search = searchParams.toString();
 
-  const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("kling-3-cinema");
-  const [aspectRatio, setAspectRatio] = useState("16:9");
-  const [duration, setDuration] = useState(5);
-  const [initialImageUrl, setInitialImageUrl] = useState<string | undefined>(undefined);
-  const [cameraMotion, setCameraMotion] = useState<CameraMotionSettings>({
-    preset: "dolly-in",
-    pan: 0,
-    tilt: 0,
-    zoom: 60,
-    focalLength: "35mm",
-    aperture: "f/2.8",
-  });
+  const balance = useCreditStore((s) => s.balance);
+  const addToast = useUIStore((s) => s.addToast);
+  const projects = useProjectStore((s) => s.projects);
+  const { generate, activeJobs, activeJob, latestCompleted } = useGeneration("cinema");
 
-  const selectedModel = CINEMA_MODELS.find((m) => m.id === model) || CINEMA_MODELS[0];
-  const activeProject = activeProcessingId ? projects.find((p) => p.id === activeProcessingId) : undefined;
-  const latestCompleted = projects.find((p) => p.type === "cinema" && p.status === "completed");
+  // Prefill once from the query string (prompt, model, ratio, duration, camera preset, source asset).
+  const [form, setForm] = useState<CinemaStudioForm>(() => formFromParams(parseStudioParams(searchParams)));
+  const appliedSearch = useRef(search);
+  useEffect(() => {
+    // Re-apply when a deep link changes while this page stays mounted (e.g. "remix" from a card below).
+    if (appliedSearch.current === search) return;
+    appliedSearch.current = search;
+    if (!search) return;
+    setForm(formFromParams(parseStudioParams(new URLSearchParams(search))));
+  }, [search]);
 
-  const handleMagicEnhance = () => {
-    if (!prompt.trim()) return;
-    setPrompt(
-      `${prompt.trim()}, 8K ultra cinematic lighting, anamorphic lens flare, shallow depth of field f/2.8, volumetric atmosphere, hyperrealistic film grain, shot on 70mm IMAX`
-    );
-  };
+  const patch = (changes: Partial<CinemaStudioForm>) => setForm((current) => ({ ...current, ...changes }));
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        if (evt.target?.result) {
-          setInitialImageUrl(evt.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
+  const [lastJobId, setLastJobId] = useState<string>();
+
+  const model = findCinemaModel(form.modelId);
+  const cost = model.creditCost;
+  const queueFull = activeJobs.length >= MAX_ACTIVE_JOBS;
+  const hasPrompt = form.prompt.trim().length > 0;
+  const hasKeyframe = Boolean(form.sourceAssetId);
+  const canGenerate = (hasPrompt || hasKeyframe) && !queueFull;
+  const { width, height } = videoDimensionsFor(form.ratio);
+
+  // A fresh upload has its object URL to hand; a deep-linked `?source=` asset is resolved from IndexedDB.
+  const storedKeyframeUrl = useAssetUrl(form.sourceAssetId);
+  const keyframePreviewUrl = form.sourceUrl ?? storedKeyframeUrl;
+
+  const cinemaProjects = useMemo(
+    () => projects.filter((p) => p.type === "cinema").sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [projects],
+  );
+  const recent = cinemaProjects.slice(0, MAX_RECENT);
+
+  // Keep the last job on screen once it is cancelled or fails, so its reason and Retry stay reachable.
+  const lastJob = lastJobId ? projects.find((p) => p.id === lastJobId) : undefined;
+  const shownJob = activeJob ?? (lastJob && lastJob.status !== "completed" ? lastJob : undefined);
+
+  const handleGenerate = () => {
+    if (!canGenerate) return;
+    const prompt = form.prompt.trim();
+    const project = generate({
+      type: "cinema",
+      prompt,
+      model: model.id,
+      aspectRatio: form.ratio,
+      duration: form.duration,
+      motionStrength: form.motionStrength,
+      cameraMotion: form.camera,
+      sourceAssetId: form.sourceAssetId,
+      creditCost: model.creditCost,
+      title: prompt ? undefined : "Keyframe animation",
+    });
+    if (!project) return;
+    setLastJobId(project.id);
+    // On stacked (mobile) layouts bring the queue/output into view.
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
-  const handleGenerate = () => {
-    if (!prompt.trim() && !initialImageUrl) return;
+  const onPromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      handleGenerate();
+    }
+  };
 
-    deductCredits(selectedModel.creditCost, `Cinema Studio (${selectedModel.name})`);
+  // Errors thrown here are caught and shown inline by the Dropzone.
+  const handleKeyframe = async (file: File) => {
+    const { assetId, url } = await storeUploadedImage(file);
+    patch({ sourceAssetId: assetId, sourceUrl: url, sourceName: file.name });
+  };
 
-    const projectId = createProject({
-      type: "cinema",
-      prompt: prompt || "Keyframe Hero Motion Animation",
-      model,
-      aspectRatio,
-      duration,
-      quality: "high",
-      initialImageUrl,
-      cameraMotion,
-    });
+  const clearKeyframe = () => patch({ sourceAssetId: undefined, sourceUrl: undefined, sourceName: undefined });
 
-    const newProj = useProjectStore.getState().getProject(projectId);
-    if (!newProj) return;
-
-    simulateGeneration(newProj, (progress, status, stageMessage, resultUrl, providerSource) => {
-      updateProject(projectId, {
-        progress,
-        status,
-        errorMessage: stageMessage,
-        outputUrl: resultUrl,
-        providerSource,
-      });
-    });
+  const applyProject = (project: GenerationProject) => {
+    setForm(formFromProject(project));
+    addToast(`Camera, engine, ratio and duration from “${project.title}” are loaded. Tweak and shoot again.`, { type: "info", title: "Remix" });
+    promptRef.current?.focus();
+    promptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Studio Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
-              <Clapperboard className="w-7 h-7 text-violet-400" /> Cinema Studio 4.0
-            </h1>
-            <Badge variant="violet">Flagship Engine</Badge>
-          </div>
-          <p className="text-xs text-zinc-400 max-w-xl">
-            Spatio-temporal AI filmmaking workspace. Stack multi-axis camera choreography, optical lens aperture control, and hero frame keyframing.
-          </p>
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <PageHeader
+        icon={<Clapperboard aria-hidden />}
+        title="Cinema Studio"
+        badge={
+          <Badge variant="sky" size="sm" dot>
+            4.0
+          </Badge>
+        }
+        description="Choreograph pan, tilt, zoom, dolly, orbit and roll on one keyframe, then pick the lens — focal length frames the shot and aperture shapes the falloff. Every frame is rendered and graded in this tab."
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Controls */}
+        <div className="lg:col-span-5">
+          <Card className="space-y-5">
+            <Dropzone
+              accept="image"
+              testId="keyframe-dropzone"
+              label="Upload a keyframe"
+              hint="Optional — otherwise we generate one from your prompt"
+              aspect={cssAspect(form.ratio)}
+              previewUrl={keyframePreviewUrl}
+              fileName={form.sourceName}
+              onFile={handleKeyframe}
+              onClear={hasKeyframe ? clearKeyframe : undefined}
+            />
+
+            <div className="space-y-1.5">
+              <Textarea
+                ref={promptRef}
+                label="Prompt"
+                testId="prompt-input"
+                value={form.prompt}
+                onChange={(event) => patch({ prompt: event.target.value })}
+                onKeyDown={onPromptKeyDown}
+                placeholder={PROMPT_PLACEHOLDER}
+                maxLength={1000}
+                showCount
+                rows={4}
+                trailing={<PromptEnhancer prompt={form.prompt} onEnhance={(next) => patch({ prompt: next })} style="cinematic" disabled={!hasPrompt} />}
+              />
+              <p className="text-[11px] text-zinc-400">
+                <Kbd>⌘</Kbd> / <Kbd>Ctrl</Kbd> + <Kbd>Enter</Kbd> generates.
+              </p>
+            </div>
+
+            <ModelSelector models={CINEMA_MODELS} value={form.modelId} onChange={(id) => patch({ modelId: id })} label="Cinema engine" />
+
+            <CameraMotionControl
+              value={form.camera}
+              onChange={(camera) => patch({ camera })}
+              previewImageUrl={keyframePreviewUrl}
+              motionStrength={form.motionStrength}
+            />
+
+            <div className="space-y-1">
+              <Slider
+                label="Motion strength"
+                testId="motion-strength-slider"
+                value={form.motionStrength}
+                min={MIN_MOTION_STRENGTH}
+                max={MAX_MOTION_STRENGTH}
+                onChange={(motionStrength) => patch({ motionStrength })}
+                formatValue={(value) => `${value}/10`}
+              />
+              <p className="text-[11px] leading-relaxed text-zinc-400">Scales how far every camera axis travels across the shot.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="block text-xs font-semibold text-zinc-300">Aspect ratio</span>
+              <RatioSelector value={form.ratio} onChange={(ratio) => patch({ ratio })} ratios={CINEMA_RATIO_IDS} columns={4} />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="block text-xs font-semibold text-zinc-300">Duration</span>
+              <DurationSelector value={form.duration} onChange={(duration) => patch({ duration })} />
+            </div>
+
+            <div className="space-y-2">
+              <Button data-testid="generate-button" size="lg" fullWidth disabled={!canGenerate} onClick={handleGenerate} leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}>
+                {queueFull ? "Queue full" : `Generate · ${cost} credits`}
+              </Button>
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                <span className="font-semibold text-zinc-300">How this clip is made: </span>
+                {hasKeyframe ? "Your keyframe → camera-motion render in your browser (.webm)" : "Prompt → AI keyframe (Pollinations) → camera-motion render in your browser (.webm)"}
+              </p>
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                {queueFull ? (
+                  <span className="text-amber-300">Three cinema jobs are running — wait for one to finish. </span>
+                ) : balance < cost ? (
+                  <span className="text-amber-300">Balance {balance.toLocaleString()} credits — Generate opens the top-up dialog. </span>
+                ) : (
+                  <>Balance {balance.toLocaleString()} credits. </>
+                )}
+                Rendering runs in real time, so a {form.duration}-second shot takes roughly {form.duration} seconds plus the keyframe.
+              </p>
+            </div>
+          </Card>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={() => navigate("/projects")}>
-            Cinema Vault ({projects.filter((p) => p.type === "cinema").length})
-          </Button>
-        </div>
-      </div>
+        {/* Output */}
+        <div ref={outputRef} className="scroll-mt-4 space-y-6 lg:col-span-7">
+          <Card data-testid="shot-sheet" padding="sm" className="space-y-3">
+            <SectionTitle icon={<ClipboardList aria-hidden />}>Shot sheet</SectionTitle>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+              <ShotRow label="Camera move" wide>
+                {describeCamera(form.camera)}
+              </ShotRow>
+              <ShotRow label="Engine">{model.name}</ShotRow>
+              <ShotRow label="Look">{describeLook(model)}</ShotRow>
+              <ShotRow label="Duration">{`${form.duration}s at ${VIDEO_FPS} fps`}</ShotRow>
+              <ShotRow label="Output">{`${width}×${height} · ${form.ratio}`}</ShotRow>
+              <ShotRow label="Cost">{`${cost} credits`}</ShotRow>
+              <ShotRow label="Keyframe">{hasKeyframe ? "Your upload" : "Generated from the prompt"}</ShotRow>
+            </dl>
+          </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Creator Panel */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Model Selector */}
-          <ModelSelector
-            models={CINEMA_MODELS}
-            selectedModelId={model}
-            onSelectModel={setModel}
-            label="Cinema Generation Engine"
+          <OutputCanvas
+            project={latestCompleted}
+            activeJob={shownJob}
+            emptyTitle="Your first sequence lands here"
+            emptyDescription="Choreograph the camera, choose a lens and press Generate. Frames are drawn, graded and encoded in this tab, then stored as a real video file."
+            emptyIcon={<Clapperboard aria-hidden />}
+            aspect={cssAspect(form.ratio)}
+            onRemix={applyProject}
           />
 
-          {/* Hero Frame First Workflow */}
-          <div className="space-y-2 rounded-2xl bg-zinc-900/90 border border-zinc-800 p-4">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-200 flex items-center gap-1.5 uppercase tracking-wider">
-                <Film className="w-4 h-4 text-violet-400" /> Hero Keyframe Image (Optional)
-              </label>
-              {initialImageUrl && (
-                <button
-                  onClick={() => setInitialImageUrl(undefined)}
-                  className="text-xs text-rose-400 hover:underline font-semibold"
-                >
-                  Remove Keyframe
-                </button>
-              )}
+          <section aria-labelledby="recent-sequences-heading" className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="recent-sequences-heading" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-300">
+                <Film className="h-4 w-4 text-brand-400" aria-hidden />
+                Recent sequences
+              </h2>
+              <Link to="/projects?filter=cinema" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-300 transition-colors hover:text-brand-200">
+                View all{cinemaProjects.length > 0 ? ` (${cinemaProjects.length})` : ""}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
             </div>
-
-            {initialImageUrl ? (
-              <div className="relative aspect-video rounded-xl overflow-hidden border border-violet-500/50 bg-zinc-950 group">
-                <img src={initialImageUrl} alt="Hero Keyframe" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs text-white font-bold bg-violet-600 px-3 py-1.5 rounded-lg">
-                    Hero Frame Loaded
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-zinc-800 hover:border-violet-500/50 rounded-xl bg-zinc-950/60 hover:bg-zinc-900/80 cursor-pointer transition-all space-y-2">
-                <Upload className="w-6 h-6 text-violet-400" />
-                <span className="text-xs font-semibold text-zinc-300">
-                  Upload Hero Keyframe Image
-                </span>
-                <span className="text-[11px] text-zinc-400">
-                  Locks in subject anatomy before applying camera motion
-                </span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
-            )}
-          </div>
-
-          {/* Cinematic Motion Prompt */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-violet-400" /> Cinema Prompt Description
-              </label>
-              <button
-                type="button"
-                onClick={handleMagicEnhance}
-                className="text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
-              >
-                <Zap className="w-3.5 h-3.5" /> Magic Enhance
-              </button>
-            </div>
-
-            <textarea
-              rows={3}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe scene motion, atmosphere, actor emotion, lighting shifts... e.g. Cinematic camera pan right tracking a cyberpunk warrior running down a rainy neon street..."
-              className="w-full rounded-2xl bg-zinc-900 border border-zinc-800 p-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/70 transition-all resize-none"
-            />
-          </div>
-
-          {/* Multi-Axis Camera Motion Controls */}
-          <CameraMotionControl value={cameraMotion} onChange={setCameraMotion} />
-
-          {/* Aspect Ratio & Duration */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Canvas Aspect Ratio</label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {["16:9", "9:16", "1:1", "21:9"].map((ratio) => (
-                  <button
-                    key={ratio}
-                    type="button"
-                    onClick={() => setAspectRatio(ratio)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                      aspectRatio === ratio
-                        ? "bg-violet-600 text-white border border-violet-400/50"
-                        : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 border border-zinc-800"
-                    }`}
-                  >
-                    {ratio}
-                  </button>
+            {recent.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {recent.map((project) => (
+                  <MediaCard key={project.id} project={project} size="sm" />
                 ))}
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Sequence Duration</label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[5, 10].map((sec) => (
-                  <button
-                    key={sec}
-                    type="button"
-                    onClick={() => setDuration(sec)}
-                    className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                      duration === sec
-                        ? "bg-violet-600 text-white border border-violet-400/50"
-                        : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 border border-zinc-800"
-                    }`}
-                  >
-                    {sec} Seconds
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Primary Action Button */}
-          <Button
-            size="lg"
-            variant="primary"
-            fullWidth
-            onClick={handleGenerate}
-            disabled={!!activeProcessingId || (!prompt.trim() && !initialImageUrl)}
-            leftIcon={<Sparkles className="w-5 h-5" />}
-          >
-            Synthesize Cinema Sequence • {selectedModel.creditCost} Credits
-          </Button>
-        </div>
-
-        {/* Right Output & Queue Canvas */}
-        <div className="lg:col-span-5 space-y-6">
-          {activeProject && <QueuePanel project={activeProject} />}
-
-          {/* Canvas Output Display */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-zinc-300 flex items-center justify-between">
-              <span>Cinematic Canvas Render</span>
-              {latestCompleted && (
-                <Badge variant="violet" size="sm">
-                  {latestCompleted.model}
-                </Badge>
-              )}
-            </h3>
-
-            {latestCompleted ? (
-              <div className="relative aspect-video rounded-3xl overflow-hidden bg-zinc-950 border border-zinc-800 shadow-2xl group">
-                <img
-                  src={latestCompleted.outputUrl}
-                  alt={latestCompleted.title}
-                  className="w-full h-full object-cover"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-between p-4 opacity-90 group-hover:opacity-100 transition-opacity">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="violet" size="sm">
-                      CINEMA • 60 FPS
-                    </Badge>
-                    <button
-                      onClick={() => navigate(`/projects/${latestCompleted.id}`)}
-                      className="p-2 rounded-full bg-black/60 text-white hover:bg-violet-600 transition-colors"
-                      title="Inspect full details"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-sm text-white">{latestCompleted.title}</h4>
-                    <p className="text-xs text-zinc-300 line-clamp-1">{latestCompleted.prompt}</p>
-                    <div className="pt-2 flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => navigate(`/projects/${latestCompleted.id}`)}
-                      >
-                        Inspect Scene Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
             ) : (
-              <div className="aspect-video rounded-3xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center p-8 text-center bg-zinc-950/60 space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-zinc-900 text-zinc-600 flex items-center justify-center">
-                  <Clapperboard className="w-7 h-7" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-zinc-300">No Cinema Render Yet</p>
-                  <p className="text-xs text-zinc-400 max-w-xs">
-                    Set up your camera motion, choose lens optics, and synthesize a cinema shot.
-                  </p>
-                </div>
-              </div>
+              <EmptyState compact icon={<Clapperboard aria-hidden />} title="No sequences yet" description="Everything you shoot here shows up in this row and in the library." />
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>
   );
 };
+
+export default CinemaStudioPage;
