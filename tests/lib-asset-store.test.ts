@@ -1,70 +1,138 @@
-import { describe, it, vi } from "vitest";
-import { writeFileSync } from "node:fs";
-import * as runner from "../src/lib/generation-runner";
-import { productNameFromUrl } from "../src/lib/catalog";
-import { slugify, timeAgo, formatBytes } from "../src/lib/format";
+/**
+ * Asset store: binary outputs live in IndexedDB (or an in-memory fallback) and
+ * are referenced by id from project metadata, so localStorage stays small.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  clearAllAssets,
+  deleteAsset,
+  garbageCollectAssets,
+  getAsset,
+  listAssetIds,
+  peekAssetUrl,
+  putAsset,
+  resolveAssetUrl,
+  storageEstimate,
+} from "../src/lib/asset-store";
 
-vi.mock("../src/lib/generation-runner", { spy: true });
-vi.mock("../src/lib/pipelines", () => ({ getPipeline: vi.fn() }));
+const blob = (text: string, type = "image/jpeg") => new Blob([text], { type });
 
-describe("probe2", () => {
-  it("prints environment facts", async () => {
-    const facts: Record<string, unknown> = {};
-    facts.windowIsGlobal = window === (globalThis as unknown);
-    vi.stubGlobal("probeValue", 42);
-    facts.stubInWindow = "probeValue" in window;
-    facts.stubOnGlobal = (globalThis as unknown as { probeValue?: number }).probeValue;
-    facts.stubViaWindow = (window as unknown as { probeValue?: number }).probeValue;
-    vi.unstubAllGlobals();
-    facts.friendlyErrorIsMock = vi.isMockFunction(runner.friendlyError);
-    facts.friendlyErrorPassThrough = runner.friendlyError(new Error("boom"));
-    try {
-      const r = await fetch("data:image/png;base64,iVBORw0KGgo=");
-      const b = await r.blob();
-      facts.dataUrlBlobType = b.type;
-      facts.dataUrlBlobSize = b.size;
-    } catch (e) {
-      facts.dataUrlErr = String(e);
-    }
-    try {
-      const res = new Response(new Blob([new Uint8Array(100)], { type: "image/jpeg" }), { status: 200, headers: { "content-type": "image/jpeg" } });
-      facts.responseCt = res.headers.get("content-type");
-      facts.responseOk = res.ok;
-      facts.responseBlobType = (await res.blob()).type;
-    } catch (e) {
-      facts.responseErr = String(e);
-    }
-    facts.productNames = {
-      slugYear: productNameFromUrl("https://shop.example.com/products/aero-runner-2024"),
-      bareDomain: productNameFromUrl("nike.com"),
-      wwwDomain: productNameFromUrl("www.acme.com/"),
-      empty: productNameFromUrl(""),
-      spaces: productNameFromUrl("not a url"),
-      colons: productNameFromUrl("https://::::"),
-      html: productNameFromUrl("https://store.com/items/widget.html"),
-      short: productNameFromUrl("https://store.com/a"),
-      underscore: productNameFromUrl("https://x.io/p/pro_max+ultra"),
-    };
-    facts.slugs = {
-      leading: slugify("--foo__bar--"),
-      accents: slugify("Héllo Wörld!"),
-      emoji: slugify("Emoji 🚀 rocket"),
-      long: slugify("a b ".repeat(30), 20),
-      punct: slugify("Hello, World!"),
-    };
-    const now = Date.UTC(2024, 2, 15, 12, 0, 0);
-    facts.timeAgo = {
-      s44: timeAgo(new Date(now - 44_000).toISOString(), now),
-      s45: timeAgo(new Date(now - 45_000).toISOString(), now),
-      d10: timeAgo(new Date(now - 10 * 86_400_000).toISOString(), now),
-    };
-    facts.bytes = { mb5: formatBytes(5 * 1024 * 1024), kb10: formatBytes(10240), tb3: formatBytes(3 * 1024 ** 4), k1536: formatBytes(1536) };
-    const t0 = Date.now();
-    await new Promise<number>((resolve) => requestAnimationFrame(resolve));
-    facts.rafMs = Date.now() - t0;
-    vi.useFakeTimers();
-    facts.perfUnderFake = typeof performance.now();
-    vi.useRealTimers();
-    writeFileSync("/private/tmp/claude-501/-Users-dev-Documents-higgsfield/6d3ed6de-d500-4efd-acc7-d029f75c08ea/scratchpad/facts2.json", JSON.stringify(facts, null, 2));
+let created: string[] = [];
+let revoked: string[] = [];
+
+beforeEach(async () => {
+  await clearAllAssets();
+  created = [];
+  revoked = [];
+  let n = 0;
+  vi.stubGlobal("URL", {
+    ...URL,
+    createObjectURL: vi.fn(() => {
+      const url = `blob:mock/${++n}`;
+      created.push(url);
+      return url;
+    }),
+    revokeObjectURL: vi.fn((url: string) => revoked.push(url)),
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("putAsset / getAsset", () => {
+  it("round-trips the blob with its kind and metadata", async () => {
+    const id = await putAsset(blob("frame"), "image", { name: "keyframe.jpg", width: 1024, height: 576 });
+    const stored = await getAsset(id);
+
+    expect(id).toMatch(/^asset_/);
+    expect(stored?.kind).toBe("image");
+    expect(stored?.name).toBe("keyframe.jpg");
+    expect(stored?.width).toBe(1024);
+    expect(stored?.height).toBe(576);
+    expect(await stored?.blob.text()).toBe("frame");
+    expect(stored?.createdAt).toBeTypeOf("number");
+  });
+
+  it("gives every asset its own id", async () => {
+    const ids = await Promise.all([putAsset(blob("a"), "image"), putAsset(blob("b"), "video"), putAsset(blob("c"), "audio")]);
+    expect(new Set(ids).size).toBe(3);
+    expect((await listAssetIds()).sort()).toEqual([...ids].sort());
+  });
+
+  it("returns undefined for an unknown id", async () => {
+    expect(await getAsset("asset_missing")).toBeUndefined();
+  });
+});
+
+describe("resolveAssetUrl", () => {
+  it("creates one object URL per asset and caches it", async () => {
+    const id = await putAsset(blob("frame"), "image");
+
+    expect(peekAssetUrl(id)).toBeUndefined();
+    const first = await resolveAssetUrl(id);
+    const second = await resolveAssetUrl(id);
+
+    expect(first).toBe(second);
+    expect(peekAssetUrl(id)).toBe(first);
+    expect(created).toHaveLength(1);
+  });
+
+  it("resolves to undefined for a missing asset or a missing id", async () => {
+    expect(await resolveAssetUrl("asset_missing")).toBeUndefined();
+    expect(await resolveAssetUrl(undefined)).toBeUndefined();
+  });
+});
+
+describe("deleteAsset", () => {
+  it("removes the record and revokes any cached object URL", async () => {
+    const id = await putAsset(blob("frame"), "image");
+    const url = await resolveAssetUrl(id);
+
+    await deleteAsset(id);
+
+    expect(await getAsset(id)).toBeUndefined();
+    expect(revoked).toEqual([url]);
+    expect(peekAssetUrl(id)).toBeUndefined();
+    expect(await listAssetIds()).not.toContain(id);
+  });
+
+  it("ignores an undefined id", async () => {
+    await expect(deleteAsset(undefined)).resolves.toBeUndefined();
+  });
+});
+
+describe("garbageCollectAssets", () => {
+  it("keeps referenced assets and drops the rest", async () => {
+    const keep = await putAsset(blob("keep"), "image");
+    const alsoKeep = await putAsset(blob("keep too"), "video");
+    const orphan = await putAsset(blob("orphan"), "image");
+
+    const removed = await garbageCollectAssets(new Set([keep, alsoKeep]));
+
+    expect(removed).toBe(1);
+    expect(await getAsset(keep)).toBeDefined();
+    expect(await getAsset(alsoKeep)).toBeDefined();
+    expect(await getAsset(orphan)).toBeUndefined();
+  });
+
+  it("removes everything when nothing is referenced", async () => {
+    await putAsset(blob("a"), "image");
+    await putAsset(blob("b"), "image");
+
+    expect(await garbageCollectAssets(new Set())).toBe(2);
+    expect(await listAssetIds()).toEqual([]);
+  });
+});
+
+describe("storageEstimate", () => {
+  it("returns null when the browser exposes no estimate", async () => {
+    vi.stubGlobal("navigator", { ...navigator, storage: undefined });
+    expect(await storageEstimate()).toBeNull();
+  });
+
+  it("reports usage and quota when available", async () => {
+    vi.stubGlobal("navigator", { ...navigator, storage: { estimate: async () => ({ usage: 2048, quota: 4096 }) } });
+    expect(await storageEstimate()).toEqual({ usage: 2048, quota: 4096 });
   });
 });
