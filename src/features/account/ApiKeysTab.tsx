@@ -64,7 +64,7 @@ export function ApiKeysTab() {
       <Card className="space-y-4">
         <SectionTitle hint={<span className="text-zinc-400">Local-only stubs</span>}>Create a key</SectionTitle>
         <p className="text-xs leading-relaxed text-zinc-400">
-          FluxFrame runs entirely in your browser, so these keys are illustrative. They are generated and stored locally and never transmitted anywhere.
+          Higgsfield Studio runs entirely in your browser, so these keys are illustrative. They are generated and stored locally and never transmitted anywhere.
         </p>
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -83,7 +83,7 @@ export function ApiKeysTab() {
       </Card>
 
       {apiKeys.length === 0 ? (
-        <EmptyState compact icon={<KeyRound />} title="No API keys yet" description="Create a key to see how FluxFrame's API would be called. Keys never leave this browser." />
+        <EmptyState compact icon={<KeyRound />} title="No API keys yet" description="Create a key to see how the Studio API would be called. Keys never leave this browser." />
       ) : (
         <Card padding="none" className="overflow-hidden">
           <ul role="list" className="divide-y divide-zinc-800/80">

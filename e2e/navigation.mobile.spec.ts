@@ -13,6 +13,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the sidebar is an off-canvas drawer that closes after navigating", async ({ page }) => {
+  // The landing route uses the wide marketing header, so start inside the shell.
+  await gotoApp(page, "/create/cinema");
   const sidebar = page.getByTestId("sidebar");
   const toggle = page.getByTestId("mobile-nav-toggle");
 

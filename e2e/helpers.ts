@@ -31,6 +31,7 @@ export const STORAGE_KEYS = {
   credits: "fluxframe-credits-v2",
   ui: "fluxframe-ui-v1",
   account: "fluxframe-account-v1",
+  auth: "higgsfield-auth-v1",
 } as const;
 
 /** IndexedDB database holding generated/uploaded blobs (src/lib/asset-store.ts). */
@@ -130,11 +131,12 @@ export function isMobileViewport(page: Page): boolean {
   return viewport !== null && viewport.width < MOBILE_BREAKPOINT;
 }
 
-/** Navigates to an app route and waits for the shell (sidebar, or its toggle on phones). */
+/**
+ * Navigates to an app route and waits for the shared Higgsfield-style header.
+ */
 export async function gotoApp(page: Page, path = "/"): Promise<void> {
   await page.goto(path);
-  const shell = isMobileViewport(page) ? page.getByTestId("mobile-nav-toggle") : page.getByTestId("sidebar");
-  await expect(shell).toBeVisible();
+  await expect(page.getByTestId("landing-logo")).toBeVisible();
 }
 
 // ---- storage -----------------------------------------------------------------------------------
@@ -145,10 +147,11 @@ export async function gotoApp(page: Page, path = "/"): Promise<void> {
  */
 export async function resetStorage(page: Page): Promise<void> {
   await page.addInitScript(
-    ({ marker, dbName }) => {
+    ({ marker, dbName, authKey, authValue }) => {
       try {
         if (window.sessionStorage.getItem(marker)) return; // already reset in this tab
         window.localStorage.clear();
+        window.localStorage.setItem(authKey, authValue);
         window.sessionStorage.clear();
         window.sessionStorage.setItem(marker, "1");
         window.indexedDB.deleteDatabase(dbName);
@@ -156,7 +159,12 @@ export async function resetStorage(page: Page): Promise<void> {
         // Storage is unavailable on this document (e.g. about:blank); nothing to reset.
       }
     },
-    { marker: RESET_MARKER, dbName: IDB_NAME },
+    {
+      marker: RESET_MARKER,
+      dbName: IDB_NAME,
+      authKey: STORAGE_KEYS.auth,
+      authValue: JSON.stringify({ state: { users: [{ id: "e2e-user", name: "Test Creator", email: "test@example.com", passwordHash: "c638833f69bbfb3c267afa0a74434812436b8f08a81fd263c6be6871de4f1265", createdAt: "2026-01-01T00:00:00.000Z" }], currentUserId: "e2e-user" }, version: 0 }),
+    },
   );
 }
 

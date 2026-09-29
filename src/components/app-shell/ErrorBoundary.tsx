@@ -22,7 +22,7 @@ const FatalErrorScreen: React.FC<{ error: Error }> = ({ error }) => {
         <div className="space-y-2">
           <h1 className="text-xl font-extrabold tracking-tight text-white">Something went wrong</h1>
           <p className="text-sm leading-relaxed text-zinc-400">
-            FluxFrame hit an unexpected error while rendering. Your projects and settings are stored locally and will still be here after a reload.
+            Higgsfield Studio hit an unexpected error while rendering. Your projects and settings are stored locally and will still be here after a reload.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

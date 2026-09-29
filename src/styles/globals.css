@@ -9,25 +9,35 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Display face for uppercase section headings and card titles. */
+  --font-grotesk: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-200: #a7f3d0;
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
-  --color-brand-950: #022c22;
+  /* --- Landing surface system (mirrors the reference suite) --- */
+  --color-ink: #0f1113;
+  --color-ink-raised: #141517;
+  --color-ink-line: rgb(247 247 248 / 0.1);
+  --color-muted: #898a8b;
+  --color-accent: #d1fe17;
+  --color-accent-ink: #14151a;
 
-  --color-surface-0: #09090b;
-  --color-surface-1: #0f0f12;
-  --color-surface-2: #141418;
-  --color-surface-3: #1b1b21;
+  --color-brand-50: #f9ffe5;
+  --color-brand-100: #f0ffc2;
+  --color-brand-200: #e3ff85;
+  --color-brand-300: #d9ff52;
+  --color-brand-400: #d1fe17;
+  --color-brand-500: #b9e600;
+  --color-brand-600: #90b800;
+  --color-brand-700: #6d8c00;
+  --color-brand-800: #566d08;
+  --color-brand-900: #485c0d;
+  --color-brand-950: #253400;
 
-  --shadow-glow: 0 0 40px -8px rgb(16 185 129 / 0.45);
+  --color-surface-0: #0e0f10;
+  --color-surface-1: #151719;
+  --color-surface-2: #202328;
+  --color-surface-3: #282c31;
+
+  --shadow-glow: 0 0 40px -8px rgb(209 254 23 / 0.35);
   --shadow-panel: 0 20px 50px -20px rgb(0 0 0 / 0.7);
 
   --animate-fade-in: fade-in 0.18s ease-out both;
@@ -149,6 +159,61 @@ input[type="range"]::-moz-range-thumb {
   border: 2px solid var(--color-brand-500);
 }
 
+/* --- Landing primitives (reference-suite geometry) --- */
+.lf-section {
+  margin-bottom: 1.5rem;
+}
+.lf-section-lg {
+  margin-bottom: 2.5rem;
+}
+@media (min-width: 768px) {
+  .lf-section-lg {
+    margin-bottom: 4rem;
+  }
+}
+.lf-container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.lf-heading {
+  font-family: var(--font-grotesk);
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.lf-sub {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--color-muted);
+}
+.lf-card-title {
+  font-family: var(--font-grotesk);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+.lf-card-sub {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  color: var(--color-muted);
+}
+/* Thin dark inset hairline that sits on top of artwork. */
+.lf-hairline {
+  box-shadow:
+    -0.5px -0.5px 1px 0 rgb(255 255 255 / 0.12) inset,
+    0.8px 0.5px 0.5px 0 rgb(0 0 0 / 0.25);
+}
+.lf-scroll {
+  scrollbar-width: none;
+}
+.lf-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Utilities */
 .glass {
   background: rgb(15 15 18 / 0.78);
@@ -181,6 +246,12 @@ input[type="range"]::-moz-range-thumb {
 }
 .dot-grid {
   background-image: radial-gradient(circle, rgb(255 255 255 / 0.09) 1px, transparent 1px);
+}
+
+/* The product uses compact muted metadata heavily. Keep those labels above
+   WCAG AA contrast on the graphite panels used throughout the studios. */
+.text-zinc-500 {
+  color: #a1a1aa;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -35,23 +35,40 @@ test.beforeEach(async ({ page }) => {
   await gotoApp(page);
 });
 
-test("boots on Explore with the app shell in place", async ({ page }) => {
-  await expect(page.getByTestId("sidebar")).toBeVisible();
-  await expect(page.getByTestId("header-breadcrumb")).toContainText("Explore");
+test("boots on Explore with the landing chrome in place", async ({ page }) => {
+  await expect(page.getByTestId("landing-logo")).toBeVisible();
+  await expect(page.getByTestId("hero-rail")).toBeVisible();
+  await expect(page.getByTestId("promo-banner")).toBeVisible();
+  await expect(page.getByTestId("landing-footer")).toBeVisible();
   await expect(page).toHaveTitle(/FluxFrame/);
+});
+
+test("a studio route boots with the app shell in place", async ({ page }) => {
+  await gotoApp(page, "/create/cinema");
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+  await expect(page.getByTestId("header-breadcrumb")).toContainText("Cinema Studio");
   await expect(page.getByTestId("credits-pill")).toBeVisible();
   await expect(page.getByTestId("command-palette-trigger")).toBeVisible();
   await expect(page.getByTestId("create-button")).toBeVisible();
 });
 
 test("every sidebar link navigates and updates the breadcrumb", async ({ page }) => {
+  // The landing route uses the wide marketing header, so start inside the shell.
+  await gotoApp(page, "/create/cinema");
   for (const link of NAV_LINKS) {
     await test.step(`nav-link-${link.id} → ${link.path}`, async () => {
       await page.getByTestId(`nav-link-${link.id}`).click();
       await expectPath(page, link.path);
       if (link.search) await expect(page).toHaveURL(new RegExp(link.search));
-      await expect(page.getByTestId("header-breadcrumb")).toContainText(link.title);
+      if (link.path === "/") {
+        // Landing: the marketing header replaces the breadcrumb.
+        await expect(page.getByTestId("landing-logo")).toBeVisible();
+      } else {
+        await expect(page.getByTestId("header-breadcrumb")).toContainText(link.title);
+      }
       await expect(page).toHaveTitle(/FluxFrame/);
+      // Return to a studio route so the sidebar is available for the next step.
+      if (link.path === "/") await gotoApp(page, "/create/cinema");
     });
   }
 });
@@ -76,7 +93,8 @@ test("unknown routes show a not-found page with a way back home", async ({ page 
   await homeLink.click();
 
   await expectPath(page, "/");
-  await expect(page.getByTestId("header-breadcrumb")).toContainText("Explore");
+  await expect(page.getByTestId("landing-logo")).toBeVisible();
+  await expect(page).toHaveTitle(/Explore|FluxFrame/);
 });
 
 test("explore page has no critical or serious accessibility violations", async ({ page }) => {

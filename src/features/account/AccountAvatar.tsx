@@ -22,7 +22,7 @@ export function AccountAvatar({ name, hue, size = "md", className }: AccountAvat
   return (
     <span
       role="img"
-      aria-label={`Avatar for ${name || "FluxFrame user"}`}
+      aria-label={`Avatar for ${name || "Higgsfield user"}`}
       style={{ background: `linear-gradient(135deg, hsl(${start} 72% 46%), hsl(${end} 70% 30%))`, textShadow: "0 1px 2px rgb(0 0 0 / 0.5)" }}
       className={cn("inline-flex shrink-0 select-none items-center justify-center font-extrabold text-white shadow-lg ring-1 ring-white/10", SIZES[size], className)}
     >

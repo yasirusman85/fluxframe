@@ -65,7 +65,7 @@ export function AccountPage() {
       <header className="flex flex-wrap items-center gap-4 border-b border-zinc-800/80 pb-5">
         <AccountAvatar name={displayName} hue={avatarHue} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-extrabold tracking-tight text-white md:text-2xl">{displayName || "FluxFrame user"}</h1>
+          <h1 className="truncate text-xl font-extrabold tracking-tight text-white md:text-2xl">{displayName || "Higgsfield user"}</h1>
           <p className="truncate text-sm text-zinc-400">@{handle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

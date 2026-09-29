@@ -10,6 +10,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "../components/app-shell/Layout";
 import { PageSkeleton } from "../components/app-shell/PageSkeleton";
 import { RouteError } from "../components/app-shell/RouteError";
+import { ProtectedRoute } from "../features/auth/ProtectedRoute";
 
 const ExplorePage = React.lazy(() => import("../features/explore/ExplorePage").then((m) => ({ default: m.ExplorePage })));
 const ImageStudioPage = React.lazy(() => import("../features/image-studio/ImageStudioPage").then((m) => ({ default: m.ImageStudioPage })));
@@ -25,6 +26,7 @@ const ProjectDetailPage = React.lazy(() => import("../features/projects/ProjectD
 const NotFoundPage = React.lazy(() => import("../features/not-found/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
+const protectedPage = (node: React.ReactNode) => <ProtectedRoute>{withSuspense(node)}</ProtectedRoute>;
 
 /**
  * Works for "/" (Cloudflare Pages) and for sub-path deploys such as
@@ -41,16 +43,16 @@ export const router = createBrowserRouter(
       errorElement: <RouteError />,
       children: [
         { index: true, element: withSuspense(<ExplorePage />), errorElement: <RouteError /> },
-        { path: "create/image", element: withSuspense(<ImageStudioPage />), errorElement: <RouteError /> },
-        { path: "create/video", element: withSuspense(<VideoStudioPage />), errorElement: <RouteError /> },
-        { path: "create/cinema", element: withSuspense(<CinemaStudioPage />), errorElement: <RouteError /> },
-        { path: "create/lipsync", element: withSuspense(<LipSyncStudioPage />), errorElement: <RouteError /> },
-        { path: "create/marketing", element: withSuspense(<MarketingStudioPage />), errorElement: <RouteError /> },
-        { path: "canvas", element: withSuspense(<CanvasPage />), errorElement: <RouteError /> },
-        { path: "apps", element: withSuspense(<AppsPage />), errorElement: <RouteError /> },
-        { path: "account", element: withSuspense(<AccountPage />), errorElement: <RouteError /> },
-        { path: "projects", element: withSuspense(<ProjectLibraryPage />), errorElement: <RouteError /> },
-        { path: "projects/:projectId", element: withSuspense(<ProjectDetailPage />), errorElement: <RouteError /> },
+        { path: "create/image", element: protectedPage(<ImageStudioPage />), errorElement: <RouteError /> },
+        { path: "create/video", element: protectedPage(<VideoStudioPage />), errorElement: <RouteError /> },
+        { path: "create/cinema", element: protectedPage(<CinemaStudioPage />), errorElement: <RouteError /> },
+        { path: "create/lipsync", element: protectedPage(<LipSyncStudioPage />), errorElement: <RouteError /> },
+        { path: "create/marketing", element: protectedPage(<MarketingStudioPage />), errorElement: <RouteError /> },
+        { path: "canvas", element: protectedPage(<CanvasPage />), errorElement: <RouteError /> },
+        { path: "apps", element: protectedPage(<AppsPage />), errorElement: <RouteError /> },
+        { path: "account", element: protectedPage(<AccountPage />), errorElement: <RouteError /> },
+        { path: "projects", element: protectedPage(<ProjectLibraryPage />), errorElement: <RouteError /> },
+        { path: "projects/:projectId", element: protectedPage(<ProjectDetailPage />), errorElement: <RouteError /> },
         { path: "*", element: withSuspense(<NotFoundPage />), errorElement: <RouteError /> },
       ],
     },

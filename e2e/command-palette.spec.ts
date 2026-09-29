@@ -36,6 +36,8 @@ test("Control+K opens the palette with the input focused and Escape closes it", 
 });
 
 test("the header trigger opens an accessible palette", async ({ page }) => {
+  // The trigger lives in the studio header; the landing route uses the marketing header.
+  await gotoApp(page, "/create/cinema");
   await page.getByTestId("command-palette-trigger").click();
   const palette = page.getByTestId("command-palette");
   await expect(palette).toBeVisible();
